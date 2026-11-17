@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thanksgiving Dinner, Inc. | Management Simulation</title>
+<style>
+:root{
+  --bg:#2a1608; --bg2:#4a2410; --card:#fff8ec; --ink:#3a2012; --ink2:#5a3a26;
+  --accent:#b8460e; --accent-d:#8f3508; --green:#1f6b34; --red:#a1261b; --gold:#f2b134;
+  --line:#e6d3b3; --blue:#1d5a8a; --fs:18px;
+}
+*{box-sizing:border-box}
+html{font-size:var(--fs)}
+body{margin:0;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;color:var(--ink);
+  background:radial-gradient(ellipse at top,#6b3513 0%,var(--bg2) 40%,var(--bg) 100%) fixed;min-height:100vh;line-height:1.5}
+.sr-only{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:8px;top:-60px;background:#fff;color:#000;padding:10px 14px;border-radius:8px;z-index:100;font-weight:700}
+.skip:focus{top:8px}
+:focus-visible{outline:4px solid #ffd54a;outline-offset:3px;border-radius:6px}
+header.top{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 16px;background:#1d0e04;color:#fff3dc;border-bottom:3px solid var(--gold)}
+header.top .brand{font-weight:800;letter-spacing:.3px;font-size:1.05rem}
+header.top .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tbtn{background:#fff3dc;color:var(--ink);border:2px solid #fff3dc;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer;min-height:40px}
+.tbtn:hover{background:#ffe2a8}
+.tbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold)}
+#clock{font-variant-numeric:tabular-nums;color:#ffe2a8;font-weight:700;font-size:.9rem}
+#hud{max-width:980px;margin:12px auto 0;padding:0 12px;display:none}
+#hud.on{display:block}
+.hudgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.meter{background:var(--card);border-radius:12px;padding:8px 10px;border:2px solid var(--line)}
+.meter .lab{display:flex;align-items:center;gap:6px;font-size:.78rem;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px}
+.meter .val{font-size:1.25rem;font-weight:800;color:var(--ink)}
+.meter .bar{height:10px;background:#ead9bb;border-radius:6px;overflow:hidden;margin-top:4px}
+.meter .bar i{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .8s}
+.meter.pulse{animation:pulse .9s}
+@keyframes pulse{0%{transform:scale(1)}30%{transform:scale(1.05);box-shadow:0 0 0 4px var(--gold)}100%{transform:scale(1)}}
+main{max-width:980px;margin:12px auto 60px;padding:0 12px}
+main:focus{outline:none}
+.card{background:var(--card);border-radius:18px;padding:20px 22px;margin:14px 0;box-shadow:0 6px 0 rgba(0,0,0,.25);border:2px solid var(--line)}
+h1{font-size:1.9rem;line-height:1.2;margin:.2em 0 .4em;color:var(--ink)}
+h2{font-size:1.3rem;margin:.2em 0 .5em}
+h3{font-size:1.1rem;margin:.2em 0 .3em}
+h1:focus,h2:focus{outline:none}
+#view>h1,#view>h2,.ondark{color:#fff3dc}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.pill{background:var(--gold);color:#2a1608;font-weight:800;font-size:.8rem;padding:4px 12px;border-radius:999px}
+.pill.alt{background:#fff3dc;border:2px solid var(--gold)}
+.stagewrap{border-radius:18px;overflow:hidden;border:4px solid #1d0e04;box-shadow:0 6px 0 rgba(0,0,0,.3);background:#f4d8a6}
+svg.stage{display:block;width:100%;height:auto}
+.btn{background:var(--accent);color:#fff;border:3px solid var(--accent-d);border-radius:14px;padding:12px 22px;font:inherit;font-weight:800;font-size:1rem;cursor:pointer;min-height:48px;box-shadow:0 4px 0 var(--accent-d)}
+.btn:hover{background:#cf5212}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--accent-d)}
+.btn.ghost{background:#fff;color:var(--accent-d);box-shadow:0 4px 0 #d9c39d;border-color:#d9c39d}
+.btn.big{font-size:1.2rem;padding:14px 30px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.narr{background:#fff;border-left:8px solid var(--gold);border-radius:12px;padding:14px 18px;margin:14px 0;font-size:1.05rem}
+.narr p{margin:.2em 0 .6em}
+.choices{display:grid;gap:10px}
+.choice{display:flex;gap:14px;align-items:flex-start;text-align:left;background:#fff;border:3px solid var(--line);border-radius:14px;padding:12px 16px;font:inherit;color:var(--ink);cursor:pointer;min-height:56px;box-shadow:0 4px 0 #d9c39d}
+.choice:hover{border-color:var(--accent);background:#fff1dc}
+.choice .ltr{flex:none;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;display:grid;place-items:center}
+.choice strong{font-size:1.02rem}
+.choice small{color:var(--ink2);font-size:.88rem}
+.deltas{list-style:none;padding:0;margin:8px 0;display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:5px 12px;border-radius:999px;font-weight:800;font-size:.9rem;border:2px solid}
+.chip.up{background:#e3f4e6;color:#14502a;border-color:#14502a}
+.chip.down{background:#fde6e2;color:#8a1c12;border-color:#8a1c12}
+.concept{background:#e8f1fa;border:3px solid var(--blue);border-radius:14px;padding:12px 16px;margin:12px 0}
+.concept h3{color:var(--blue);margin-top:0}
+.hint{background:#fff8d6;border:2px dashed #b88a00;border-radius:12px;padding:8px 14px;margin:10px 0;font-size:.95rem}
+details.talk{background:#f3ecff;border:3px solid #5b3a96;border-radius:14px;padding:10px 16px;margin:12px 0}
+details.talk summary{cursor:pointer;font-weight:800;color:#3d2468;min-height:32px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.modecard{display:block;background:#fff;border:3px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}
+.modecard:has(input:checked){border-color:var(--accent);background:#fff1dc;box-shadow:0 0 0 3px var(--gold)}
+.modecard input{width:20px;height:20px;margin-right:8px;vertical-align:middle}
+.goals{display:flex;gap:16px;align-items:flex-start}
+.goals ul{margin:.3em 0 .3em 1.1em;padding:0}
+.eq{background:#fff3cf;border:3px solid var(--gold);border-radius:14px;padding:10px 16px;margin-top:10px}
+.poem{font-style:italic;line-height:1.55;background:#fffdf6;border:2px dashed var(--accent);border-radius:14px;padding:12px 18px}
+.poem p{margin:.1em 0}
+label.fld{display:block;font-weight:800;margin:6px 0 4px}
+input[type=text],select,textarea{font:inherit;padding:10px 12px;border:3px solid var(--line);border-radius:10px;width:100%;max-width:420px;background:#fff;color:var(--ink)}
+textarea{max-width:none;min-height:80px}
+.score{font-size:3.4rem;font-weight:900;color:var(--accent);line-height:1}
+.gazette{background:#f9f3e2;border:3px double #333;padding:12px 18px;font-family:Georgia,"Times New Roman",serif;text-align:center}
+.gazette .mast{font-size:.8rem;letter-spacing:3px;text-transform:uppercase;border-bottom:2px solid #333;padding-bottom:4px}
+.gazette h2{font-size:1.5rem;margin:.4em 0}
+.cert{border:10px double var(--accent);background:#fffdf4;text-align:center;padding:22px;border-radius:8px}
+.cert h2{font-family:Georgia,serif;font-size:1.7rem;color:var(--accent-d)}
+table.t{border-collapse:collapse;width:100%;font-size:.88rem}
+table.t th,table.t td{border:2px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.t th{background:#f3e3c2}
+.qopt{display:block;width:100%;text-align:left;background:#fff;border:3px solid var(--line);border-radius:12px;padding:10px 14px;margin:6px 0;font:inherit;color:var(--ink);cursor:pointer;min-height:48px}
+.qopt:hover{border-color:var(--accent)}
+.qopt.right{background:#e3f4e6;border-color:#14502a}
+.qopt.wrong{background:#fde6e2;border-color:#8a1c12}
+dialog{width:min(920px,94vw);max-height:88vh;overflow:auto;border:5px solid var(--gold);border-radius:18px;padding:0;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(20,8,0,.7)}
+dialog .dh{position:sticky;top:0;background:#1d0e04;color:#fff3dc;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+dialog .dh h2{margin:0;font-size:1.2rem}
+dialog .db{padding:14px 20px 22px}
+.setrow{display:flex;gap:10px;align-items:center;margin:10px 0;flex-wrap:wrap}
+.setrow input[type=checkbox]{width:22px;height:22px}
+/* animations */
+.bob{animation:bob 1.6s ease-in-out infinite}
+.bob2{animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.wob{transform-box:fill-box;transform-origin:50% 100%;animation:wob 2.6s ease-in-out infinite}
+@keyframes wob{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.sway{animation:sway 4s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:translateX(-4px)}50%{transform:translateX(4px)}}
+.steam{animation:steam 2.6s ease-in-out infinite;opacity:.7}
+@keyframes steam{0%{transform:translateY(8px);opacity:0}40%{opacity:.8}100%{transform:translateY(-22px);opacity:0}}
+.rise{animation:rise 3s ease-in infinite;opacity:0}
+@keyframes rise{0%{transform:translateY(10px) scale(.6);opacity:0}30%{opacity:.85}100%{transform:translateY(-70px) scale(1.7);opacity:0}}
+.glow{animation:glow 1.4s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.65}50%{opacity:1}}
+.fall{animation:fall 2.4s linear infinite;opacity:0}
+@keyframes fall{0%{transform:translateY(-40px) rotate(0);opacity:0}15%{opacity:1}100%{transform:translateY(120px) rotate(360deg);opacity:0}}
+.blink{animation:blink 4s infinite;transform-box:fill-box;transform-origin:center}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.wag{transform-box:fill-box;transform-origin:0% 100%;animation:wag .5s ease-in-out infinite alternate}
+@keyframes wag{from{transform:rotate(-20deg)}to{transform:rotate(25deg)}}
+.twinkle{animation:glow 1.8s ease-in-out infinite}
+.shake{animation:shake .5s ease-in-out infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+.pop{transform-box:fill-box;transform-origin:50% 100%;animation:pop .5s ease-out both}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.calm *,.calm{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.badges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:8px}
+.badge{background:#fff;border:3px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center}
+.badge strong{display:block;font-size:.95rem}
+.badge span.tier{display:inline-block;font-weight:800;font-size:.8rem;margin-top:2px}
+.badge.locked{opacity:.75;background:#f1e8d6}
+.badge.new{border-color:var(--gold);box-shadow:0 0 0 4px var(--gold)}
+@media (max-width:760px){
+  .hudgrid{grid-template-columns:repeat(2,1fr)}
+  .grid2{grid-template-columns:1fr}
+  .goals{flex-direction:column}
+  h1{font-size:1.5rem}
+}
+@media print{
+  body{background:#fff}
+  .noprint,header.top,#hud,dialog{display:none!important}
+  .card{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to main content</a>
+<header class="top">
+  <div class="brand">Thanksgiving Dinner, Inc.</div>
+  <div class="tools">
+    <span id="clock" aria-live="off"></span>
+    <button class="tbtn" id="btnNar" aria-pressed="true">Narration: On</button>
+    <button class="tbtn" id="btnSet">Settings</button>
+    <button class="tbtn" id="btnReset">Reset</button>
+    <button class="tbtn" id="btnTeach">Teacher Guide</button>
+  </div>
+</header>
+<section id="hud" aria-label="Company dashboard"></section>
+<main id="main" tabindex="-1"><div id="view"></div><noscript><div class="card"><h1>JavaScript needed</h1><p>This simulation needs JavaScript turned on to run.</p></div></noscript></main>
+<div id="sr" class="sr-only" aria-live="polite" role="status"></div>
+
+<dialog id="dSet" aria-labelledby="dSetT">
+  <div class="dh"><h2 id="dSetT">Settings</h2><button class="tbtn" data-close="dSet">Close</button></div>
+  <div class="db">
+    <div class="setrow"><label class="fld" for="selVoice" style="margin:0">Narrator voice</label><select id="selVoice"></select></div>
+    <div class="setrow"><label class="fld" for="selRate" style="margin:0">Narration speed</label>
+      <select id="selRate"><option value="0.85">Slower</option><option value="0.95" selected>Natural</option><option value="1.1">Faster</option></select></div>
+    <p style="margin:.2em 0;font-size:.9rem">Tip: voices labeled Natural or Online sound the most human. The list depends on your device and browser.</p>
+    <div class="setrow"><input type="checkbox" id="chkCalm"><label for="chkCalm">Calm mode: turn off all animation</label></div>
+    <div class="setrow"><input type="checkbox" id="chkBig"><label for="chkBig">Larger text</label></div>
+    <div class="setrow"><input type="checkbox" id="chkClock"><label for="chkClock">Show pacing clock at the top</label></div>
+    <div class="row"><button class="btn" data-close="dSet">Done</button></div>
+  </div>
+</dialog>
+
+<dialog id="dReset" aria-labelledby="dResetT">
+  <div class="dh"><h2 id="dResetT">Reset Options</h2><button class="tbtn" data-close="dReset">Close</button></div>
+  <div class="db">
+    <p><strong>Restart this run.</strong> Go back to setup and play again. Your badge collection stays.</p>
+    <div class="row"><button class="btn" data-act="restartRun">Restart This Run</button></div>
+    <hr>
+    <p><strong>Erase everything.</strong> Clears all badges, best score, play count, and any saved run on this device.</p>
+    <div class="row"><button class="btn ghost" data-act="eraseAll" id="btnErase">Erase All Badges and Progress</button></div>
+    <p id="eraseMsg" role="status"></p>
+  </div>
+</dialog>
+
+<dialog id="dTeach" aria-labelledby="dTeachT">
+  <div class="dh"><h2 id="dTeachT">Teacher Guide: Feet-Up Facilitation</h2><button class="tbtn" data-close="dTeach">Close</button></div>
+  <div class="db" id="teachBody"></div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function val(x){return typeof x==='function'?x(S):x}
+function money(n){return (n<0?'-':'')+'$'+Math.abs(Math.round(n))}
+
+/* ---------- settings ---------- */
+var CFG={nar:true,voice:'',rate:0.95,calm:false,big:false,clock:false};
+function loadCfg(){try{var j=localStorage.getItem('tdi_cfg');if(j){var o=JSON.parse(j);for(var k in o)CFG[k]=o[k]}}catch(e){}}
+function saveCfg(){try{localStorage.setItem('tdi_cfg',JSON.stringify(CFG))}catch(e){}}
+function applyCfg(){
+  document.body.classList.toggle('calm',!!CFG.calm);
+  document.documentElement.style.setProperty('--fs',CFG.big?'21px':'18px');
+  var b=$('#btnNar');b.setAttribute('aria-pressed',CFG.nar?'true':'false');b.textContent='Narration: '+(CFG.nar?'On':'Off');
+  $('#clock').style.display=CFG.clock?'inline':'none';
+  $('#chkCalm').checked=CFG.calm;$('#chkBig').checked=CFG.big;$('#chkClock').checked=CFG.clock;$('#selRate').value=String(CFG.rate);
+}
+
+/* ---------- narration (browser speech) ---------- */
+var TTS={ok:('speechSynthesis' in window),voices:[],pick:null};
+function scoreVoice(v){var s=0,n=v.name;
+  if(/natural|neural|online/i.test(n))s+=60;
+  if(/aria|jenny|ava|andrew|emma|brian|guy|sonia|libby|ryan|samantha|allison|serena|karen|moira|daniel|google (us|uk) english/i.test(n))s+=25;
+  if(/^en-US/i.test(v.lang))s+=8;
+  if(/espeak|compact|novelty|fred|junior|albert|bad|bells|whisper|zarvox|trinoids|organ|boing|cellos/i.test(n))s-=80;
+  return s}
+function loadVoices(){
+  if(!TTS.ok)return;
+  var all=speechSynthesis.getVoices().filter(function(v){return /^en/i.test(v.lang)});
+  if(!all.length)return;
+  all.sort(function(a,b){return scoreVoice(b)-scoreVoice(a)});
+  TTS.voices=all;
+  var sel=$('#selVoice');
+  sel.innerHTML=all.map(function(v){return '<option value="'+esc(v.name)+'">'+esc(v.name)+' ('+esc(v.lang)+')</option>'}).join('');
+  var pick=all.filter(function(v){return v.name===CFG.voice})[0]||all[0];
+  TTS.pick=pick;sel.value=pick.name;
+}
+function stopSpeech(){if(TTS.ok){try{speechSynthesis.cancel()}catch(e){}}}
+function speak(text){
+  stopSpeech();
+  if(!TTS.ok||!CFG.nar||!text)return;
+  var clean=String(text).replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').replace(/&amp;/g,'and');
+  var parts=clean.match(/[^.!?]+[.!?]+["')]*|[^.!?]+$/g)||[clean];
+  var chunks=[],cur='';
+  parts.forEach(function(p){if((cur+p).length>170){if(cur)chunks.push(cur);cur=p}else cur+=p});
+  if(cur)chunks.push(cur);
+  chunks.forEach(function(c){
+    var u=new SpeechSynthesisUtterance(c.trim());
+    if(TTS.pick)u.voice=TTS.pick;
+    u.rate=CFG.rate;u.pitch=1.02;u.lang=(TTS.pick&&TTS.pick.lang)||'en-US';
+    speechSynthesis.speak(u);
+  });
+}
+var lastSpoken='';
+function say(t){lastSpoken=t;speak(t)}
+
+/* ---------- art helpers ---------- */
+var SK={
+  ceo:{skin:'#c68642',shirt:'#1f6b34',hair:'#2b1b0e',st:'short',label:'You, the CEO',hat:1},
+  linda:{skin:'#f1c9a5',shirt:'#c0392b',hair:'#8d8d8d',st:'bun',label:'Aunt Linda'},
+  dave:{skin:'#e0ac82',shirt:'#2e86c1',hair:'#4a2c17',st:'short',label:'Cousin Dave'},
+  maya:{skin:'#8d5a3b',shirt:'#8e44ad',hair:'#1d1d1d',st:'curls',label:'Maya'},
+  joe:{skin:'#f1c9a5',shirt:'#5d6d7e',hair:'#f4f4f4',st:'white',label:'Grandpa Joe'},
+  rose:{skin:'#e8b894',shirt:'#d35400',hair:'#dcdcdc',st:'bun',label:'Grandma Rose'},
+  rick:{skin:'#d9a37a',shirt:'#117a65',hair:'#6b4a2b',st:'short',label:'Uncle Rick'}
+};
+function person(key,x,mood,i){
+  var c=SK[key];if(!c)return '';
+  var hair='';
+  if(c.st==='bun')hair='<circle cx="0" cy="-26" r="9" fill="'+c.hair+'"/><path d="M-22 -2 A22 22 0 0 1 22 -2 Q0 -12 -22 -2Z" fill="'+c.hair+'"/>';
+  if(c.st==='short')hair='<path d="M-22 -2 A22 22 0 0 1 22 -2 Q0 -14 -22 -2Z" fill="'+c.hair+'"/>';
+  if(c.st==='white')hair='<path d="M-22 -2 A22 22 0 0 1 22 -2 Q0 -12 -22 -2Z" fill="'+c.hair+'" stroke="#bbb"/><circle cx="-8" cy="0" r="7" fill="none" stroke="#333" stroke-width="2"/><circle cx="8" cy="0" r="7" fill="none" stroke="#333" stroke-width="2"/><path d="M-1 0H1" stroke="#333" stroke-width="2"/>';
+  if(c.st==='curls')hair='<circle cx="-15" cy="-13" r="9" fill="'+c.hair+'"/><circle cx="-5" cy="-21" r="9" fill="'+c.hair+'"/><circle cx="6" cy="-21" r="9" fill="'+c.hair+'"/><circle cx="16" cy="-13" r="9" fill="'+c.hair+'"/>';
+  var mouth='<path d="M-8 9 Q0 17 8 9" stroke="#5a2a1a" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  var brows='';
+  if(mood==='worried'){mouth='<path d="M-8 13 Q0 6 8 13" stroke="#5a2a1a" stroke-width="3" fill="none" stroke-linecap="round"/>';brows='<path d="M-12 -9 L-4 -12 M12 -9 L4 -12" stroke="#3a2012" stroke-width="2.5"/>'}
+  if(mood==='shock'){mouth='<ellipse cx="0" cy="11" rx="5" ry="7" fill="#5a2a1a"/>';brows='<path d="M-12 -12 L-4 -12 M12 -12 L4 -12" stroke="#3a2012" stroke-width="2.5"/>'}
+  if(mood==='angry'){mouth='<path d="M-8 13 Q0 7 8 13" stroke="#5a2a1a" stroke-width="3" fill="none" stroke-linecap="round"/>';brows='<path d="M-13 -13 L-4 -8 M13 -13 L4 -8" stroke="#3a2012" stroke-width="3"/>'}
+  var hat=c.hat?'<rect x="-18" y="-30" width="36" height="9" rx="3" fill="#fff"/><circle cx="-11" cy="-37" r="10" fill="#fff"/><circle cx="0" cy="-43" r="12" fill="#fff"/><circle cx="11" cy="-37" r="10" fill="#fff"/><rect x="-18" y="-30" width="36" height="9" rx="3" fill="#fff" stroke="#ddd"/>':'';
+  return '<g transform="translate('+x+',112)"><g class="'+(i%2?'bob2':'bob')+'" style="animation-delay:'+(i*0.25)+'s">'+
+   '<rect x="-25" y="20" width="50" height="62" rx="18" fill="'+c.shirt+'"/>'+
+   '<circle r="22" fill="'+c.skin+'"/>'+hair+
+   '<g class="blink"><circle cx="-8" cy="-2" r="2.8" fill="#222"/><circle cx="8" cy="-2" r="2.8" fill="#222"/></g>'+brows+mouth+hat+
+   '</g><text x="0" y="104" text-anchor="middle" font-size="13" font-weight="800" fill="#3a2012" stroke="#fff3dc" stroke-width="3" paint-order="stroke" font-family="Trebuchet MS,sans-serif">'+c.label+'</text></g>';
+}
+function turkey(x,mode){
+  var body=mode==='frozen'?'#bfe3f2':'#c9792e', dark=mode==='frozen'?'#6aa6c0':'#7a4210', leg=mode==='frozen'?'#d6eef8':'#b9651f';
+  var extra='';
+  if(mode==='frozen'){extra='<polygon points="-30,-38 -24,-26 -36,-26" fill="#e9f8ff"/><polygon points="-6,-44 0,-30 -12,-30" fill="#e9f8ff"/><polygon points="22,-40 28,-27 16,-27" fill="#e9f8ff"/><g class="twinkle"><path d="M-44 -62 l0 14 M-51 -55 l14 0 M-49 -60 l10 10 M-39 -60 l-10 10" stroke="#fff" stroke-width="2.5"/></g><g class="twinkle" style="animation-delay:.6s"><path d="M46 -66 l0 12 M40 -60 l12 0" stroke="#fff" stroke-width="2.5"/></g>'}
+  else{extra='<path class="steam" d="M-22 -48 q-8 -10 0 -18 q8 -8 0 -16" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/><path class="steam" style="animation-delay:.9s" d="M2 -52 q-8 -10 0 -18 q8 -8 0 -16" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/><path class="steam" style="animation-delay:1.7s" d="M26 -48 q-8 -10 0 -18 q8 -8 0 -16" stroke="#fff" stroke-width="4" fill="none" stroke-linecap="round"/>'}
+  return '<g transform="translate('+x+',226)"><ellipse cx="0" cy="6" rx="86" ry="14" fill="#f5f5f5" stroke="#cfcfcf" stroke-width="2"/>'+
+   '<ellipse cx="-60" cy="-6" rx="14" ry="10" fill="'+leg+'" stroke="'+dark+'" stroke-width="2"/><circle cx="-76" cy="-8" r="5" fill="#fff"/>'+
+   '<ellipse cx="60" cy="-6" rx="14" ry="10" fill="'+leg+'" stroke="'+dark+'" stroke-width="2"/><circle cx="76" cy="-8" r="5" fill="#fff"/>'+
+   '<ellipse cx="0" cy="-14" rx="58" ry="34" fill="'+body+'" stroke="'+dark+'" stroke-width="3"/>'+
+   '<ellipse cx="-12" cy="-26" rx="26" ry="12" fill="#fff" opacity=".28"/>'+extra+'</g>';
+}
+function liveTurkey(cx,cy,sc,hat){
+  var cols=['#a1261b','#d35400','#f2b134','#7a4a24','#f2b134','#d35400','#a1261b'],f='';
+  for(var i=0;i<7;i++){f+='<ellipse cx="0" cy="-64" rx="16" ry="48" fill="'+cols[i]+'" stroke="#3a2012" stroke-width="2" transform="rotate('+((i-3)*26)+')"/>'}
+  return '<g transform="translate('+cx+','+cy+') scale('+sc+')"><g class="wob">'+f+'</g>'+
+   '<g class="bob"><ellipse cx="0" cy="10" rx="48" ry="42" fill="#8a5a2b" stroke="#3a2012" stroke-width="3"/><ellipse cx="0" cy="18" rx="30" ry="28" fill="#c9965a"/>'+
+   '<rect x="-30" y="48" width="6" height="26" fill="#e08a1e"/><rect x="24" y="48" width="6" height="26" fill="#e08a1e"/><path d="M-40 76 h24 M16 76 h24" stroke="#e08a1e" stroke-width="6" stroke-linecap="round"/>'+
+   '<circle cx="0" cy="-30" r="22" fill="#a86b3a" stroke="#3a2012" stroke-width="3"/>'+
+   '<g class="blink"><circle cx="-8" cy="-34" r="6" fill="#fff"/><circle cx="8" cy="-34" r="6" fill="#fff"/><circle cx="-7" cy="-33" r="3" fill="#222"/><circle cx="9" cy="-33" r="3" fill="#222"/></g>'+
+   '<polygon points="-6,-26 6,-26 0,-14" fill="#f2b134" stroke="#8a5a00" stroke-width="1.5"/><ellipse cx="0" cy="-10" rx="4" ry="9" fill="#d12c1f"/>'+
+   '<polygon points="-7,-4 7,-4 5,22 0,28 -5,22" fill="#a1261b" stroke="#5a0f08" stroke-width="2"/><rect x="-7" y="-6" width="14" height="6" rx="2" fill="#a1261b" stroke="#5a0f08" stroke-width="2"/>'+
+   (hat?'<rect x="-18" y="-60" width="36" height="9" rx="3" fill="#fff" stroke="#ddd"/><circle cx="-11" cy="-67" r="10" fill="#fff"/><circle cx="0" cy="-73" r="12" fill="#fff"/><circle cx="11" cy="-67" r="10" fill="#fff"/><rect x="-18" y="-60" width="36" height="9" rx="3" fill="#fff" stroke="#ddd"/>':'')+
+   '</g></g>';
+}
+function bubble(x,y,t){y-=14;var w=Math.max(60,t.length*8.2+22);return '<g transform="translate('+x+','+y+')"><g class="pop"><rect x="'+(-w/2)+'" y="-22" width="'+w+'" height="30" rx="14" fill="#fff" stroke="#3a2012" stroke-width="3"/><path d="M-6 8 L0 18 L6 8Z" fill="#fff" stroke="#3a2012" stroke-width="3" stroke-linejoin="round"/><rect x="-8" y="5" width="16" height="5" fill="#fff"/><text x="0" y="-2" text-anchor="middle" font-size="15" font-weight="800" fill="#3a2012" font-family="Trebuchet MS,sans-serif">'+esc(t)+'</text></g></g>'}
+var PROP={
+  table:function(x){var s='';for(var i=-2;i<=2;i++)s+='<circle cx="'+(i*40)+'" cy="214" r="13" fill="#fff" stroke="#cdbb99" stroke-width="2"/><circle cx="'+(i*40)+'" cy="214" r="7" fill="#f6e7c8"/>';return '<g transform="translate('+x+',0)"><rect x="-120" y="224" width="240" height="12" rx="4" fill="#7a4a24"/>'+s+'<g class="glow"><rect x="-4" y="190" width="8" height="22" fill="#f6e7c8"/><ellipse cx="0" cy="186" rx="4" ry="7" fill="#ffb300"/></g></g>'},
+  turkeyFrozen:function(x){return turkey(x,'frozen')},
+  turkeyCooked:function(x){return turkey(x,'cooked')},
+  oven:function(x){return '<g transform="translate('+x+',0)"><rect x="-62" y="130" width="124" height="140" rx="10" fill="#6d6d6d" stroke="#333" stroke-width="3"/><rect x="-46" y="170" width="92" height="64" rx="6" fill="#222"/><rect class="glow" x="-42" y="176" width="84" height="52" rx="4" fill="#ff8a1e" opacity=".85"/><rect x="-44" y="150" width="88" height="8" rx="4" fill="#bbb"/><circle cx="-30" cy="143" r="5" fill="#ddd"/><circle cx="-10" cy="143" r="5" fill="#ddd"/><circle cx="10" cy="143" r="5" fill="#ddd"/><circle cx="30" cy="143" r="5" fill="#ddd"/></g>'},
+  smoke:function(x){var s='';for(var i=0;i<5;i++)s+='<circle class="rise" style="animation-delay:'+(i*.6)+'s" cx="'+(i*14-28)+'" cy="150" r="14" fill="#8a8a8a"/>';return '<g transform="translate('+x+',0)">'+s+'</g>'},
+  money:function(x){var s='';for(var i=0;i<6;i++)s+='<g class="fall" style="animation-delay:'+(i*.4)+'s"><circle cx="'+(i*22-55)+'" cy="40" r="11" fill="#f2b134" stroke="#8a5a00" stroke-width="2"/><text x="'+(i*22-55)+'" y="45" text-anchor="middle" font-size="13" font-weight="800" fill="#8a5a00">$</text></g>';return '<g transform="translate('+x+',0)">'+s+'</g>'},
+  clock:function(x){return '<g transform="translate('+x+',70)"><circle r="30" fill="#fff" stroke="#3a2012" stroke-width="4"/><path d="M0 0 L0 -20 M0 0 L14 8" stroke="#3a2012" stroke-width="4" stroke-linecap="round"/><circle r="3" fill="#a1261b"/></g>'},
+  door:function(x,n){n=+n||4;var s='',cols=['#e0ac82','#8d5a3b','#f1c9a5','#d9a37a','#c68642','#e8b894'];for(var i=0;i<n;i++)s+='<g class="bob" style="animation-delay:'+(i*.2)+'s"><circle cx="'+(-34+i*(68/Math.max(1,n-1)))+'" cy="118" r="14" fill="'+cols[i%6]+'"/><rect x="'+(-46+i*(68/Math.max(1,n-1)))+'" y="132" width="24" height="40" rx="10" fill="'+['#2e86c1','#c0392b','#117a65','#8e44ad'][i%4]+'"/></g>';return '<g transform="translate('+x+',0)"><rect x="-55" y="40" width="110" height="190" rx="8" fill="#7a4a24" stroke="#3a2012" stroke-width="4"/><rect x="-44" y="52" width="88" height="170" fill="#ffe9b8"/>'+s+'<circle cx="40" cy="150" r="5" fill="#f2b134"/></g>'},
+  dog:function(x){return '<g transform="translate('+x+',270)"><g class="bob2"><ellipse cx="0" cy="0" rx="34" ry="18" fill="#c68a4a"/><circle cx="34" cy="-12" r="16" fill="#c68a4a"/><ellipse cx="44" cy="-28" rx="6" ry="12" fill="#8a5a2b"/><circle cx="40" cy="-14" r="2.6" fill="#222"/><ellipse cx="50" cy="-8" rx="4" ry="3" fill="#222"/><g class="wag"><path d="M-34 -4 q-18 -10 -14 -26" stroke="#c68a4a" stroke-width="8" fill="none" stroke-linecap="round"/></g></g></g>'},
+  pie:function(x){return '<g transform="translate('+x+',0)"><ellipse cx="0" cy="224" rx="46" ry="10" fill="#e6e6e6"/><path d="M-40 218 q0 -34 40 -34 q40 0 40 34Z" fill="#d79a4a" stroke="#8a5a1a" stroke-width="3"/><path d="M-20 200 l40 0 M-10 190 l20 0" stroke="#8a5a1a" stroke-width="3"/></g>'},
+  cart:function(x){return '<g transform="translate('+x+',0)"><path d="M-60 170 h20 l16 50 h90 l14 -40 h-110" stroke="#444" stroke-width="5" fill="#dfe6ea" stroke-linejoin="round"/><circle cx="-14" cy="232" r="9" fill="#333"/><circle cx="60" cy="232" r="9" fill="#333"/><rect x="-6" y="188" width="22" height="24" fill="#c0392b"/><rect x="22" y="196" width="22" height="16" fill="#f2b134"/><circle cx="62" cy="200" r="11" fill="#d35400"/></g>'},
+  gravy:function(x){return '<g transform="translate('+x+',0)"><path d="M-30 218 q0 -22 30 -22 q30 0 30 22Z" fill="#fff" stroke="#999" stroke-width="3"/><path d="M26 204 q22 -4 18 -16 l-12 6" fill="#fff" stroke="#999" stroke-width="3"/><ellipse cx="0" cy="198" rx="22" ry="5" fill="#7a4a1a"/></g>'},
+  alarm:function(x){return  '<g transform="translate('+x+',60)"><g class="shake"><circle r="22" fill="#fff" stroke="#a1261b" stroke-width="5"/><text y="7" text-anchor="middle" font-size="20" font-weight="900" fill="#a1261b">!</text><path d="M-34 -18 q-8 10 0 20 M34 -18 q8 10 0 20" stroke="#a1261b" stroke-width="4" fill="none" stroke-linecap="round"/></g></g>'},
+  confetti:function(x){var s='',c=['#f2b134','#b8460e','#1f6b34','#a1261b','#1d5a8a'];for(var i=0;i<26;i++)s+='<rect class="fall" style="animation-delay:'+((i%9)*.28)+'s;animation-duration:'+(2+(i%5)*.4)+'s" x="'+(20+i*29)+'" y="0" width="9" height="14" fill="'+c[i%5]+'"/>';return '<g>'+s+'</g>'},
+  garland:function(){var s='',c=['#d35400','#a1261b','#f2b134','#7a4a24'];for(var i=0;i<14;i++)s+='<circle class="sway" style="animation-delay:'+(i*.2)+'s" cx="'+(30+i*57)+'" cy="'+(14+(i%2)*10)+'" r="11" fill="'+c[i%4]+'"/>';return '<g>'+s+'</g>'}
+};
+function stage(sc){
+  var s='<svg class="stage" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">'+
+   '<rect width="800" height="300" fill="#f6dcae"/><rect y="0" width="800" height="226" fill="#f4d29b"/>'+
+   '<rect x="40" y="40" width="130" height="100" rx="8" fill="#9fd3ee" stroke="#7a4a24" stroke-width="6"/><path d="M105 40v100M40 90h130" stroke="#7a4a24" stroke-width="5"/><circle cx="140" cy="68" r="14" fill="#ffd54a"/>'+
+   '<rect y="226" width="800" height="40" fill="#a0602b"/><rect y="226" width="800" height="9" fill="#d9a066"/><rect y="266" width="800" height="34" fill="#7a4a24"/>'+
+   PROP.garland();
+  (sc.props||[]).forEach(function(p){var a=p.split('@'),f=PROP[a[0]];if(f&&a[0]!=='oven'&&a[0]!=='door'&&a[0]!=='dog'&&a[0]!=='money'&&a[0]!=='confetti')return;if(f)s+=f(a[1]||400,a[2])});
+  (sc.cast||[]).forEach(function(c,i){var a=c.split('@');s+=person(a[0],+a[1],a[2]||'happy',i)});
+  (sc.props||[]).forEach(function(p){var a=p.split('@'),f=PROP[a[0]];if(f&&a[0]!=='oven'&&a[0]!=='door'&&a[0]!=='dog'&&a[0]!=='money'&&a[0]!=='confetti')s+=f(a[1]||400,a[2])});
+  (sc.say||[]).forEach(function(b){s+=bubble(b[0],b[1],b[2])});
+  return s+'</svg>';
+}
+function heroStage(){
+  return '<svg class="stage" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">'+
+  '<defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd8a0"/><stop offset="1" stop-color="#f08a3c"/></linearGradient></defs>'+
+  '<rect width="800" height="300" fill="url(#hg)"/>'+PROP.garland()+PROP.confetti()+
+  '<rect y="262" width="800" height="38" fill="#7a4a24"/>'+
+  '<g transform="translate(400,8)"><rect x="-250" y="0" width="500" height="54" rx="12" fill="#2a1608" stroke="#f2b134" stroke-width="4"/><text x="0" y="36" text-anchor="middle" font-size="29" font-weight="900" fill="#ffe2a8" font-family="Trebuchet MS,sans-serif">THANKSGIVING DINNER, INC.</text></g>'+
+  '<g transform="translate(0,40)">'+person('linda',110,'worried',0)+person('joe',210,'happy',1)+person('dave',590,'shock',2)+person('maya',690,'happy',3)+'</g>'+
+  liveTurkey(400,190,1.0,true)+'</svg>';
+}
+var ICON={
+  cash:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f2b134" stroke="#8a5a00" stroke-width="2"/><text x="12" y="17" text-anchor="middle" font-size="14" font-weight="900" fill="#8a5a00">$</text></svg>',
+  sat:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffd54a" stroke="#8a5a00" stroke-width="2"/><circle cx="8.5" cy="10" r="1.6" fill="#333"/><circle cx="15.5" cy="10" r="1.6" fill="#333"/><path d="M7 14 q5 5 10 0" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/></svg>',
+  kit:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="3" fill="#6d6d6d"/><rect x="2" y="9" width="3" height="3" fill="#6d6d6d"/><rect x="19" y="9" width="3" height="3" fill="#6d6d6d"/><path d="M9 6 q1 -3 3 -3 q-1 3 1 3" stroke="#d35400" stroke-width="2" fill="none"/></svg>',
+  mor:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 C3 14 3 6 8 5 q3 -.5 4 2 q1 -2.5 4 -2 c5 1 5 9 -4 16Z" fill="#c0392b"/></svg>',
+  guests:'<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="4" fill="#8d5a3b"/><circle cx="17" cy="9" r="3.4" fill="#e0ac82"/><path d="M1 21 q0 -9 7 -9 q7 0 7 9Z" fill="#2e86c1"/><path d="M14 21 q0 -7 4 -7 q5 0 5 7Z" fill="#c0392b"/></svg>'
+};
+var LAB={cash:'Cash',sat:'Guest Happiness',kit:'Kitchen Readiness',mor:'Crew Morale',guests:'Guests'};
+
+/* ---------- state ---------- */
+var DAYS=[null,
+ {n:1,name:'Monday',focus:'Strategy and Budget'},
+ {n:2,name:'Tuesday',focus:'Operations and Supply Chain'},
+ {n:3,name:'Wednesday',focus:'People and Leadership'},
+ {n:4,name:'Thursday Morning',focus:'Crisis Management'},
+ {n:5,name:'Thursday Dinner',focus:'Launch and Feedback'}];
+var SEQ_X=[1,3,4,6,7,10,11,13];
+var SEQ_E=[1,2,3,4,5,6,7,8,9,10,11,12,13,14];
+var STYLES={auto:'Commanding Chef',demo:'Collaborative Captain',deleg:'Delegating Director',lais:'Hands-Off Host'};
+var STYLEDESC={auto:'You decide fast and take charge. In a crisis that speed is a gift. Over time, people may stop offering ideas.',
+  demo:'You ask for input and build agreement. Morale rises, though meetings can run long when the oven is hot.',
+  deleg:'You match tasks to strengths and trust people to deliver. That frees you to watch the big picture.',
+  lais:'You let things unfold. People get freedom, but problems can grow unnoticed until the smoke alarm announces them.'};
+var S;
+function newState(mode){return {phase:'title',mode:mode||'express',step:0,cash:0,start:0,sat:50,kit:40,mor:60,guests:0,flags:{},style:{auto:0,demo:0,deleg:0,lais:0},log:[],ev:null,order:{},ceo:'',last:null,qa:{},revise:'',note:'',badges:{},counted:false}}
+S=newState();
+function seq(){return S.mode==='express'?SEQ_X:SEQ_E}
+
+/* ---------- scenes ---------- */
+var SC={};
+SC[1]={day:1,title:'Set the Scope',best:'b',cast:['ceo@250@happy','maya@400@happy'],props:['table@620'],say:[[250,60,'Who is hungry?']],
+ desc:'Monday morning in a warm kitchen. You, wearing a chef hat, stand beside Maya at a table set with plates. Autumn leaves hang across the top of the room.',
+ story:'Monday, 8 A.M. Welcome to the boardroom, which is also the kitchen table. Your company, Thanksgiving Dinner, Incorporated, has exactly one product: dinner. Before anyone touches a potato, the CEO must set the scope. Scope decides how many guests you serve, how much money you start with, and how many things can go sideways.',
+ choices:[
+  {k:'a',t:'Cozy Cafe: 8 guests, $300 budget',d:'Fewer moving parts. Fewer hugs, too.',init:{cash:300,start:300,guests:8},fx:{kit:15,mor:10},style:'demo',out:'You keep it small. The kitchen hums, the budget breathes, and Aunt Linda says it is the first calm Thanksgiving planning meeting in family history.',concept:['Scope and Constraints','Scope is the size of the job. A smaller scope lowers risk and cost, but it also limits how many customers you can serve.']},
+  {k:'b',t:'Classic Feast: 16 guests, $450 budget',d:'A real challenge with room to grow.',init:{cash:450,start:450,guests:16},fx:{sat:5},style:'demo',out:'Sixteen guests is a respectable crowd. The budget is tight but workable, and everyone agrees this is the Goldilocks size.',concept:['Scope and Constraints','A mid-sized scope balances opportunity and risk. Managers choose scope by comparing what they want to do with what money, time, and people allow.']},
+  {k:'c',t:'Grand Banquet: 28 guests, $650 budget',d:'Maximum glory. Maximum chaos.',init:{cash:650,start:650,guests:28},fx:{sat:10,kit:-15,mor:-10},style:'auto',out:'Twenty-eight guests! Dave starts borrowing chairs from the neighbors. The budget is larger, but so is every single task.',concept:['Scope Creep and Risk','Each added guest multiplies the shopping, cooking, seating, and cleanup. Big goals can stretch a team past its capacity.']}
+ ],talk:'Which constraint matters most to a new business: money, time, or people? Why?'};
+
+SC[2]={day:1,title:'Who Does What?',best:'b',cast:['ceo@170@happy','linda@310@happy','dave@450@worried','maya@590@happy','joe@720@happy'],props:[],
+ desc:'Five people stand in a row in the kitchen: you, Aunt Linda, Cousin Dave who looks nervous, Maya, and Grandpa Joe.',
+ story:'Monday, 11 A.M. Your crew has arrived. Aunt Linda is a professional-grade baker. Cousin Dave once set off a smoke alarm making toast. Maya is a sixteen-year-old spreadsheet wizard. Grandpa Joe is a carving legend. How will you organize the team?',
+ choices:[
+  {k:'a',t:'Do it all yourself',d:'Control feels comforting.',fx:{kit:-10,mor:-15},style:'auto',out:'By Monday night your to-do list is longer than the grocery receipt. Your crew has been helping by standing nearby holding snacks.',concept:['Delegation','A manager who does every task becomes the bottleneck. Delegation shares the work, builds trust, and frees the leader to plan.']},
+  {k:'b',t:'Assign jobs by strengths',d:'Ask each person what they do best.',fx:{kit:12,mor:10},style:'deleg',out:'Linda owns baking, Maya owns the budget tracker, Joe owns the carving station, and Dave is in charge of the can opener. Everyone has a job that fits.',concept:['Right Person, Right Job','Matching tasks to skills improves quality and motivation. People work harder when their strengths are noticed.']},
+  {k:'c',t:'Draw jobs from a gravy boat',d:'Fair, random, and a little silly.',fx:{kit:-5,mor:5},style:'lais',out:'Dave draws "pie crust." Linda draws "napkin folding." Everyone laughs. The pie crust looks like a map of a mountain range.',concept:['Random Assignment','Fair does not always mean effective. Ignoring skills can protect feelings, but it lowers quality.']}
+ ],talk:'Describe a time a team put someone in the wrong role. What did it cost?'};
+
+SC[3]={day:1,title:'Choose the Menu',best:'a',cast:['ceo@200@happy','linda@360@happy'],props:['table@600'],say:[[360,52,'Pie is non-negotiable.']],
+ desc:'You and Aunt Linda discuss recipe cards at the kitchen counter while a long table with plates waits in the background.',
+ story:function(s){return 'Monday, 2 P.M. The menu is your product line. A traditional spread is familiar but needs many dishes. A potluck shares the cost and the work. A fusion menu stands out but is risky. You are cooking for '+s.guests+' guests, so cost per plate matters.'},
+ choices:[
+  {k:'a',t:'Traditional spread',d:function(s){return 'About $14 per guest, so '+money(s.guests*14)+' total.'},fx:function(s){return {cash:-s.guests*14,sat:15,kit:-10}},style:'demo',set:{menu:'trad'},out:'Turkey, stuffing, mashed potatoes, green beans, and rolls. No one is surprised, and everyone is delighted. Comfort food is a reliable product.',concept:['Cost per Unit','Dividing total cost by the number of customers shows the cost per plate. Knowing it helps managers price, budget, and compare options.']},
+  {k:'b',t:'Potluck style',d:function(s){return 'About $5 per guest, so '+money(s.guests*5)+' total. Guests bring dishes.'},fx:function(s){return {cash:-s.guests*5,sat:5,kit:10,mor:5}},style:'lais',set:{menu:'potluck'},out:'Sixteen kinds of casserole arrive. One is mysteriously blue. Your costs are tiny, but you have almost no control over quality.',concept:['Outsourcing and Quality Control','Sharing the work saves money and time, but you give up control over what the customer receives.']},
+  {k:'c',t:'Fusion menu',d:function(s){return 'About $18 per guest, so '+money(s.guests*18)+' total. Turkey tacos and pumpkin everything.'},fx:function(s){return {cash:-s.guests*18,sat:10,kit:-15,mor:-5}},style:'auto',set:{menu:'fusion'},out:'The pumpkin-spice gravy divides the room into lovers and skeptics. Nobody forgets this dinner, which is a kind of marketing.',concept:['Differentiation','A distinctive product can stand out, but it may cost more and appeal to fewer customers.']}
+ ],talk:'When is it smart to copy what customers expect, and when is it smart to be different?'};
+
+SC[4]={day:2,title:'The Star Product: Turkey',best:'a',cast:['ceo@220@happy','joe@380@happy'],props:['cart@610'],say:[[380,52,'Back in my day...']],
+ desc:'Tuesday at the butcher counter. Grandpa Joe stands next to you and a shopping cart waits on the right.',
+ story:'Tuesday, 9 A.M. The turkey is your main product. A fresh turkey costs more and is ready to cook. A frozen one is a bargain, but a frozen turkey of this size takes about four to five days to thaw safely in a refrigerator. A pre-cooked bird costs the most and saves the most work. Today is Tuesday. Dinner is Thursday at four.',
+ choices:[
+  {k:'a',t:'Fresh turkey from the butcher',d:function(s){return 'About '+money(s.guests*5)+'. Ready to roast.'},fx:function(s){return {cash:-s.guests*5,kit:10}},set:{turkey:'fresh'},out:'You pay extra, but the turkey is plump, safe, and ready to cook. You buy yourself something valuable: time.',concept:['Cost Versus Time','Money and time trade off. Paying more can remove risk and protect the schedule.']},
+  {k:'b',t:'Frozen supermarket special',d:function(s){return 'About '+money(s.guests*2.4)+'. Needs days to thaw.'},fx:function(s){return {cash:-Math.round(s.guests*2.4)}},set:{turkey:'frozen'},style:'lais',out:'What a bargain! You place the rock-solid turkey in the freezer, look at the calendar, and decide you will think about it later.',concept:['Lead Time','Lead time is the delay between starting a task and finishing it. A frozen turkey has a long lead time. Ignoring it creates a crisis later.']},
+  {k:'c',t:'Pre-cooked, heat and serve',d:function(s){return 'About '+money(s.guests*9)+'. Easy, but Grandpa has opinions.'},fx:function(s){return {cash:-s.guests*9,kit:20,sat:-5,mor:-5}},set:{turkey:'precooked'},out:'The turkey arrives golden and finished. Grandpa Joe inspects it like a detective and says only, "Hmm."',concept:['Make Versus Buy','Managers compare making a product with buying it. Buying saves effort and risk, but it costs more and can change how the customer feels.']}
+ ],talk:'Name a product where the cheapest option creates hidden costs later.'};
+
+SC[5]={day:2,title:'The Cranberry Shortage',best:'b',cast:['ceo@220@worried','rose@400@worried'],props:['cart@610'],say:[[400,52,'Empty shelves!']],
+ desc:'In a grocery aisle, you and Grandma Rose stare at an empty shelf where cranberry sauce should be.',
+ story:'Tuesday, 1 P.M. You reach the cranberry aisle and find a shelf as empty as a refrigerator at midnight. Everyone in town had the same idea. This is a supply chain disruption, and the cranberry sauce is non-negotiable to Grandma Rose.',
+ choices:[
+  {k:'a',t:'Pay triple at the specialty shop',d:'Across town. About $35.',fx:{cash:-35,sat:5,mor:-5},out:'You get the last can, in a fancy jar, for the price of a small appliance. The sauce is tasty. Your wallet is not.',concept:['Premium Pricing in Shortages','When supply is low, prices rise. A manager pays the premium only when the customer value is worth it.']},
+  {k:'b',t:'Make it from fresh cranberries',d:'About $12 and some extra work.',fx:{cash:-12,sat:10,kit:-8},style:'deleg',out:'Maya finds a recipe, Linda supervises, and the berries pop like tiny fireworks. Homemade beats canned by a mile.',concept:['Alternative Sourcing','Looking for another supplier or another process keeps a business running when the usual supply fails.']},
+  {k:'c',t:'Substitute and rebrand',d:'About $8. Cherry sauce becomes "Heritage Berry Relish."',fx:{cash:-8,sat:-3},style:'auto',out:'Grandma Rose studies the label and raises one eyebrow. The relish is fine. The new name does not fool anyone.',concept:['Substitution and Honesty','A substitute can solve a shortage, but customers notice. Clear, honest communication protects trust.']}
+ ],talk:'How should a business tell customers about a substitute product?'};
+
+SC[6]={day:2,title:'One Oven, Many Dishes',best:'a',cast:['ceo@220@worried','linda@380@worried'],props:['oven@600','clock@520'],say:[[300,52,'Everything at 3 P.M.?']],
+ desc:'You and Aunt Linda look worried while a single oven glows beside a wall clock.',
+ story:'Tuesday, 4 P.M. You list every dish that needs an oven: turkey, stuffing, rolls, sweet potatoes, and three pies. You own exactly one oven. The oven is your bottleneck, the one resource that limits how fast the whole dinner can be finished.',
+ choices:[
+  {k:'a',t:'Build a critical-path schedule',d:'Work backward from 4 P.M. and sequence each dish.',fx:{kit:22,mor:5},style:'demo',out:'On a whiteboard, the turkey goes first, pies move to Wednesday, and rolls warm last. The plan looks like a subway map, and it works.',concept:['Critical Path and Bottleneck','The critical path is the chain of tasks that sets the minimum time to finish. Managers schedule around the bottleneck and move other tasks earlier.']},
+  {k:'b',t:'Borrow the neighbor\'s oven',d:'It costs one apple pie in goodwill, about $10.',fx:{cash:-10,kit:14},style:'deleg',out:'Mrs. Alvarez happily lends her oven, as long as she gets the first slice. Capacity doubled for the price of a pie.',concept:['Adding Capacity','Capacity is how much work a system can handle. Borrowing, renting, or sharing capacity is cheaper than buying it.']},
+  {k:'c',t:'Rent a countertop roaster',d:'About $30.',fx:{cash:-30,kit:16},out:'The roaster arrives with a little oven mitt. It handles the sweet potatoes beautifully and makes you feel like a professional.',concept:['Investing to Remove a Bottleneck','A small investment can unlock a big improvement when it targets the real bottleneck.']},
+  {k:'d',t:'Cook everything at once and hope',d:'Optimism is a strategy, right?',fx:{kit:-18,sat:-5,mor:-5},style:'lais',out:'Hope is not a schedule. The rolls come out as hockey pucks, and the pies are still soup.',concept:['Planning','Without a plan, the bottleneck controls you. Hoping is not a management tool.']}
+ ],talk:'Where is the bottleneck in your own school day or job?'};
+
+SC[7]={day:3,title:'Stuffing Versus Dressing',best:'b',cast:['linda@240@angry','dave@560@angry','ceo@400@shock'],props:[],say:[[240,52,'My recipe!'],[560,52,'No, MINE!']],
+ desc:'Aunt Linda and Cousin Dave glare at each other from opposite sides of the room while you stand between them looking startled.',
+ story:'Wednesday, 10 A.M. A conflict erupts. Aunt Linda says the family stuffing recipe uses sage. Cousin Dave says his grandmother\'s recipe uses apples and is far superior. Voices are rising. Two stuffing recipes cannot fit in one oven, and your crew is watching what the CEO does next.',
+ choices:[
+  {k:'a',t:'The CEO decides: Linda\'s recipe wins',d:'Quick and final.',fx:{mor:-10,kit:5},style:'auto',set:{conflict:'comp'},out:'The kitchen goes quiet. Dave sets down his apron and cooperates, though he is no longer humming. The decision was fast, but the feelings stayed.',concept:['Competing Style','Using authority settles a conflict quickly, which helps in emergencies. It can leave the losing side resentful.']},
+  {k:'b',t:'Make both and hold a taste test',d:'Cost about $15. Let the guests decide.',fx:{cash:-15,mor:12,sat:10,kit:-10},style:'demo',set:{conflict:'collab'},out:'Both stuffings appear in pretty bowls with name cards. The vote is a tie, which is the best possible result. Linda and Dave are now co-champions.',concept:['Collaborating Style','Collaboration looks for a solution that meets both sides\' needs. It takes more effort, but it builds the strongest relationships.']},
+  {k:'c',t:'Split the pan: half and half',d:'Each person gets a side.',fx:{mor:5,kit:-5,sat:5},style:'demo',set:{conflict:'comp2'},out:'Half sage, half apple, one pan with a divider made of foil. Nobody is thrilled, and nobody is furious.',concept:['Compromising Style','In a compromise, each side gives up something. It is fast and fair, but nobody gets everything they wanted.']},
+  {k:'d',t:'Pretend you did not hear it',d:'Maybe it will go away.',fx:{mor:-15,kit:-5},style:'lais',set:{conflict:'avoid'},out:'It did not go away. By noon, two people are cooking separately, and one of them is whispering about you.',concept:['Avoiding Style','Avoiding can cool a minor issue. With a serious one, the problem grows while the leader looks away.']}
+ ],talk:'Which conflict style do you use most often? When does it fail?'};
+
+SC[8]={day:3,title:'Midnight Energy Crisis',best:'d',cast:['ceo@240@happy','maya@400@worried','joe@560@worried'],props:['table@650'],say:[[400,52,'I am so tired.']],
+ desc:'Late Wednesday night. Maya yawns and Grandpa Joe nods off in his chair while you stand ready to lead.',
+ story:'Wednesday, 9 P.M. The crew has been peeling, chopping, and stirring since morning. Maya is yawning. Grandpa Joe is asleep upright. There are still two hours of work left, and the quality is slipping. How will you keep your team motivated?',
+ choices:[
+  {k:'a',t:'Pizza break and a 15-minute dance party',d:'About $25.',fx:{cash:-25,mor:20,kit:3},style:'demo',out:'Pizza arrives, the speakers come on, and Grandpa Joe demonstrates a move nobody knew he had. Morale shoots up.',concept:['Meeting Basic Needs','Food, rest, and fun keep people working well. Managers who ignore basic needs get fewer results.']},
+  {k:'b',t:'Public recognition: the Golden Gravy Boat',d:'Name an Employee of the Night.',fx:{mor:12},style:'demo',out:'Maya wins for the budget tracker. She holds the gravy boat like an Olympic medal. Dave quietly asks how he can win tomorrow.',concept:['Recognition','Sincere, specific recognition costs almost nothing and motivates people to repeat strong work.']},
+  {k:'c',t:'No pie until the peeling is done',d:'Firm and clear.',fx:{mor:-15,kit:5},style:'auto',out:'The potatoes get peeled with the speed of fear. By morning, the crew is calling you "The Pie Warden."',concept:['Threats and Short-Term Gains','Pressure can produce a quick result, but it damages trust and willingness to help later.']},
+  {k:'d',t:'Let each person choose their remaining task',d:'Autonomy in the final stretch.',fx:{mor:15,kit:8},style:'deleg',out:'Maya picks the pies, Joe picks the carving prep, Dave picks the mashed potatoes, and everyone works with more energy than before.',concept:['Autonomy and Motivation','People are more motivated when they have a say in how they do their work.']}
+ ],talk:'What motivates you more: recognition, choice, or rewards? Why?'};
+
+SC[9]={day:3,title:'Too Many Rolls',best:'a',cast:['ceo@220@shock','linda@380@shock','dave@540@shock'],props:['table@650'],say:[[380,52,'I bought rolls.'],[540,52,'So did I!']],
+ desc:'You, Aunt Linda, and Cousin Dave stare at mountains of bread rolls that three people bought independently.',
+ story:'Wednesday, 10 P.M. You open the pantry. Four bags of rolls from Linda, three from Dave, and two from Maya. Nobody told anybody. Meanwhile, no one bought butter. Duplicated work and missing items are signs of poor communication.',
+ choices:[
+  {k:'a',t:'Post a shared checklist on the fridge',d:'Every task has an owner and a checkbox.',fx:{kit:16,mor:6,cash:-4},style:'deleg',out:'The fridge door becomes mission control. Tasks are claimed, checked, and celebrated. You buy butter and a marker for $4.',concept:['Information Systems and Coordination','A simple shared system shows who is doing what. Good communication prevents duplicated work and missed tasks.']},
+  {k:'b',t:'Send a long group text',d:'Everyone will read it. Probably.',fx:{kit:-4,mor:-3},style:'lais',out:'The text receives three thumbs up, one question mark, and a photo of a dog. Nobody can find the actual list.',concept:['Communication Channels','A message is only useful if people read it and can find it. Long, unstructured updates get lost.']},
+  {k:'c',t:'Return the extra rolls',d:'Get a refund and start fresh.',fx:{cash:12,kit:-5,mor:-5},style:'auto',out:'You recover $12 and gain a reputation as the family accountant. The trip took forty minutes, though.',concept:['Waste Reduction','Returning extras saves money, but the time spent may cost more than the refund.']}
+ ],talk:'How does your group share who is doing what? Is it working?'};
+
+SC[10]=function(s){
+  var t=s.flags.turkey;
+  if(t==='frozen')return {day:4,title:'Crisis at 6:45 A.M.',best:'a',variant:'frozen',cast:['ceo@260@shock','rose@420@worried'],props:['turkeyFrozen@620','clock@530'],say:[[260,52,'It is a rock!']],
+   desc:'Thursday morning. You look shocked beside a turkey covered in ice. The clock on the wall shows early morning.',
+   story:'Thursday, 6:45 A.M. You tap the turkey. It sounds like a bowling ball. Dinner is at four, and a turkey this size needs hours in the oven. You never planned the thaw. Time for crisis management.',
+   choices:[
+    {k:'a',t:'Roast it straight from frozen',d:'Safe and allowed. It simply takes about 50 percent longer.',fx:{kit:12,sat:-2,mor:-3},style:'demo',out:'You check the guidance, move the oven rack, and start at 7:30. It is not pretty, but it is safe, and the turkey is done by 2:30 with time to rest.',concept:['Contingency Plans','A contingency plan is a prepared backup. Knowing a safe alternative lets managers act calmly instead of panicking.']},
+    {k:'b',t:'Buy fresh turkey breasts at the store',d:'About $45. Pay to fix the problem fast.',fx:{cash:-45,kit:14,sat:4},style:'auto',out:'You sprint to the store and return with three fresh breasts and a receipt that makes you wince. Dinner is rescued.',concept:['Crash Cost','Paying extra to speed up a late project is called crashing. It protects the deadline but strains the budget.']},
+    {k:'c',t:'Announce dinner will be at 9 P.M.',d:'Be honest about the delay.',fx:{sat:-20,mor:-5},style:'demo',out:'Guests take the news with grace and a lot of snacks. Dinner is delicious, but a hungry crowd rates lower than a happy one.',concept:['Stakeholder Communication','Telling stakeholders early about a delay keeps their trust, even when it lowers their satisfaction.']},
+    {k:'d',t:'Thaw it on the counter in warm water',d:'Fast and easy, what could go wrong?',fx:{kit:4,sat:-25,mor:-5},style:'lais',out:'Warm water and countertops let bacteria grow quickly. Maya calmly points out the food safety rules, and you throw the plan out. The delay and the worry cost you.',concept:['Risk Management','A shortcut that creates a safety risk is never worth it. Managers weigh speed against harm to customers.']}
+   ],talk:'What was the first mistake in this crisis: the purchase, the plan, or the communication?'};
+  if(t==='precooked')return {day:4,title:'Crisis at 6:45 A.M.',best:'a',variant:'precooked',cast:['ceo@260@shock','joe@420@angry'],props:['turkeyCooked@620'],say:[[420,52,'Not a real turkey.']],
+   desc:'Thursday morning. Grandpa Joe frowns with folded arms next to a golden pre-cooked turkey on a platter.',
+   story:'Thursday, 6:45 A.M. The pre-cooked turkey is perfect, and Grandpa Joe is furious. He refuses to carve what he calls "a store-bought bird." Your carving station is empty, and the family tradition feels at risk. This is a customer and employee problem rolled into one.',
+   choices:[
+    {k:'a',t:'Let Joe finish it with a homemade glaze and a carving ceremony',d:'About $8 in ingredients.',fx:{cash:-8,mor:15,sat:10,kit:5},style:'deleg',out:'Joe designs a maple glaze, announces the carving to a drumroll, and slices with great ceremony. The store-bought bird becomes his bird.',concept:['Ownership and Engagement','People support what they help shape. Giving someone a meaningful role turns resistance into energy.']},
+    {k:'b',t:'Tell Joe it is not up for discussion',d:'Firm and fast.',fx:{mor:-15,kit:3},style:'auto',out:'Joe carves in total silence, with every cut saying something loud. Nobody feels comfortable at the table.',concept:['Authority and Resistance','Overriding a respected team member can win the task and lose the person.']},
+    {k:'c',t:'Order a second turkey to appease Joe',d:'About $60. Too late.',fx:{cash:-60,kit:-10,sat:3},style:'lais',out:'The second turkey arrives at 2:45 and cannot be ready in time. You now own two turkeys and a headache.',concept:['Sunk Cost and Overreaction','A costly fix for a people problem can create a bigger operational problem.']}
+   ],talk:'How can a leader make change feel like a choice rather than an order?'};
+  return {day:4,title:'Crisis at 6:45 A.M.',best:'a',variant:'fresh',cast:['ceo@260@shock','dave@420@worried'],props:['oven@620','smoke@620'],say:[[260,52,'The oven lied!']],
+   desc:'Thursday morning. You and Cousin Dave look worried beside an oven that sends up a little smoke.',
+   story:'Thursday, 6:45 A.M. Your fresh turkey is in the oven, set to 325 degrees. Dave notices that the oven\'s dial says one thing and the heat feels like another. If the oven runs cold, dinner will be late and possibly unsafe. Time for a quick fix.',
+   choices:[
+    {k:'a',t:'Buy an oven thermometer and adjust',d:'About $8. Measure, then fix.',fx:{cash:-8,kit:16,mor:3},style:'demo',out:'The thermometer shows 275 degrees. You raise the dial and the turkey is back on track. Measuring first beats guessing.',concept:['Measure Then Manage','Data helps a manager find the real problem. A cheap measurement can prevent an expensive mistake.']},
+    {k:'b',t:'Move the turkey to the neighbor\'s oven',d:'Costs one favor.',fx:{kit:10,mor:-3},style:'deleg',out:'Mrs. Alvarez happily helps again. The turkey travels through the yard with an escort of cousins.',concept:['Using a Backup Resource','A partner or backup resource saves a project when equipment fails.']},
+    {k:'c',t:'Ignore it and hope for the best',d:'It has always been fine before.',fx:{kit:-15,sat:-12},style:'lais',out:'At 3:30 the turkey is still pale. The "always been fine" strategy has found its limit.',concept:['Ignoring Warning Signs','Small signs of trouble get bigger. Strong managers respond early.']}
+   ],talk:'What small warning sign do managers often ignore until it is too late?'};
+};
+
+SC[11]={day:4,title:'Surprise! More Guests',best:'c',cast:['rick@240@happy','ceo@400@shock','rose@560@worried'],props:['door@110@6'],say:[[240,52,'Brought friends!']],
+ desc:'Uncle Rick waves cheerfully as six extra guests wait behind him at the front door. You look stunned.',
+ story:'Thursday, 1:30 P.M. The doorbell rings. Uncle Rick has arrived with six people he forgot to mention. Your food, chairs, and budget were planned for a smaller crowd. This is a capacity problem, and the guests are already taking off their coats.',
+ choices:[
+  {k:'a',t:'Stretch the portions and add rice',d:'About $30.',fx:{cash:-30,guests:6,sat:-5,kit:-5},style:'auto',out:'The plates look a little thinner, but everybody gets something, and the extra rice is decorated like a work of art.',concept:['Capacity Planning','Capacity is the most you can serve at an acceptable quality. Stretching it too far lowers quality for everyone.']},
+  {k:'b',t:'Send someone to the store for more sides',d:'About $50.',fx:{cash:-50,guests:6,kit:-10,sat:5,mor:-10},style:'auto',out:'Maya and Dave return with bags of food and a new respect for supermarket traffic. The crew is tired, but there is enough.',concept:['Expediting','Rushing extra supplies in solves the shortage and strains your team.']},
+  {k:'c',t:'Invite the guests to help',d:'Many hands make light work.',fx:{guests:6,mor:6,sat:6,kit:6},style:'demo',out:'Within minutes the new guests are setting tables, filling glasses, and washing greens. People who help feel like hosts instead of customers.',concept:['Empowerment and Customer Co-creation','Involving customers in the work can add capacity and increase their satisfaction.']},
+  {k:'d',t:'Serve in two waves',d:'Kids first, adults second.',fx:{guests:6,kit:8,sat:-3},style:'demo',out:'The kids\' wave finishes quickly, the adults enjoy a calm second round, and the oven gets a breather.',concept:['Smoothing Demand','Spreading customers over time lets a business serve more people with the same resources.']}
+ ],talk:'How does a restaurant plan for a rush it did not expect?'};
+
+var EVENTS=[
+ {title:'The Smoke Alarm Symphony',cast:['ceo@260@shock','dave@430@worried'],props:['smoke@620','alarm@620'],say:[[430,52,'It was the rolls!']],desc:'A smoke alarm flashes on the wall while smoke curls up beside Cousin Dave.',
+  story:'Thursday, 2:15 P.M. Beep. Beep. Beep. The smoke alarm sings as Dave\'s rolls produce a cloud. Guests are watching to see how the CEO handles pressure.',best:'a',
+  choices:[
+   {k:'a',t:'Open windows, run the fan, and calmly reset the timer',d:'Stay steady.',fx:{kit:8,mor:6},style:'demo',out:'Within a minute the alarm quiets. You say, "Everything is under control," and for once it is true.',concept:['Calm Leadership','A calm leader helps others think clearly. People copy the emotional tone they see at the top.']},
+   {k:'b',t:'Pull the battery and move on',d:'Silence solves everything.',fx:{kit:-3,mor:-4},style:'lais',out:'The beeping stops. The real issue, burnt rolls, remains. Maya quietly checks for any other smoke.',concept:['Treating Symptoms','Silencing an alarm is not the same as solving the problem.']},
+   {k:'c',t:'Turn it into a team cheer',d:'Guests wave dish towels.',fx:{mor:12,sat:8,kit:-3},style:'demo',out:'Everyone waves towels. Rose records a video titled "Thanksgiving Fire Drill." It becomes a family classic.',concept:['Culture and Humor','Humor can turn stress into bonding when the situation is safe.']}]},
+ {title:'The Dog and the Ham',cast:['ceo@260@shock','rose@430@shock'],props:['dog@600','turkeyCooked@620'],say:[[430,52,'The dog ate the ham!']],desc:'A dog trots through the kitchen looking guilty while Grandma Rose gasps.',
+  story:'Thursday, 2:15 P.M. A tail wag, a gasp, and a missing section of the side ham. The dog looks proud. You have a quality control and ethics decision to make.',best:'c',
+  choices:[
+   {k:'a',t:'Quietly trim it and serve it without saying anything',d:'Nobody needs to know.',fx:{sat:-12,mor:-8},style:'auto',out:'Someone notices the odd shape and a rumor spreads quickly. Trust drops faster than the gravy cooled.',concept:['Ethics and Trust','Hiding a problem from customers risks their health and your reputation.']},
+   {k:'b',t:'Scold the dog and move on',d:'The dog is not impressed.',fx:{mor:-3,sat:-3},style:'lais',out:'The dog is unmoved. The ham is still missing.',concept:['Blame Without a Fix','Assigning blame feels satisfying, but it does not restore the product.']},
+   {k:'c',t:'Tell guests honestly and serve the backup sides',d:'Transparency wins.',fx:{sat:8,mor:6,kit:-4},style:'demo',out:'You announce the ham\'s sad fate. Guests laugh, applaud your honesty, and enjoy extra stuffing.',concept:['Transparency','Being honest about a problem builds trust and often earns understanding.']}]},
+ {title:'The Great Pie Crash',cast:['dave@260@shock','ceo@420@shock','linda@580@angry'],props:['pie@620'],say:[[260,52,'It slipped!']],desc:'Cousin Dave stares at a pie on the floor while Aunt Linda looks upset and you look surprised.',
+  story:'Thursday, 2:15 P.M. Splat. Dave\'s elbow met the pumpkin pie. Linda\'s face says everything. The pie is gone, and the team is watching how you respond to a mistake.',best:'c',
+  choices:[
+   {k:'a',t:'Blame Dave in front of everyone',d:'Accountability, loud version.',fx:{mor:-15,kit:-3},style:'auto',out:'Dave turns the color of cranberry sauce. Nobody takes risks for the rest of the day.',concept:['Blame Culture','Public blame teaches people to hide mistakes instead of fixing them.']},
+   {k:'b',t:'Run for a store-bought pie',d:'About $15.',fx:{cash:-15,sat:3,mor:-2},style:'auto',out:'The substitute is fine. You smile and nobody asks any questions.',concept:['Quick Recovery','A backup product can save the day, though it costs money.']},
+   {k:'c',t:'Turn the crumbs into pumpkin parfaits',d:'Rescue and reflect.',fx:{sat:8,mor:10},style:'deleg',out:'Dave helps layer the parfaits in cups and receives applause. Linda adds a whipped-cream swirl. The mistake becomes the favorite dessert.',concept:['Learning From Mistakes','Treating mistakes as problems to solve builds a creative and loyal team.']}]},
+ {title:'The Power Flicker',cast:['ceo@260@worried','maya@430@worried'],props:['oven@620','clock@520'],say:[[430,52,'Lights are out!']],desc:'The room is dim as you and Maya look up at the ceiling light. An oven glows nearby.',
+  story:'Thursday, 2:15 P.M. The lights flicker and the oven goes dark. The turkey is not done. A power outage is a risk that you cannot control, but you can control your response.',best:'b',
+  choices:[
+   {k:'a',t:'Wait and see',d:'Maybe it will come back.',fx:{kit:-12,sat:-5},style:'lais',out:'Twenty minutes pass. Guests are hungry and the turkey is lukewarm. Waiting was not a plan.',concept:['Inaction','Waiting has a cost when the clock is ticking.']},
+   {k:'b',t:'Move the turkey to the gas grill and set a timer',d:'Use a backup energy source.',fx:{kit:12,mor:6,sat:3},style:'demo',out:'The grill hums and the turkey finishes outside. Rose calls it "backyard-style." Everyone calls it good.',concept:['Redundancy','A backup system lets a business keep working when its main system fails.']},
+   {k:'c',t:'Call a catering company',d:'About $60.',fx:{cash:-60,kit:8,sat:3},style:'auto',out:'Help arrives within the hour and costs a lot. You learn the price of not having a backup.',concept:['Outsourcing in an Emergency','Emergency services work, but they cost a premium.']}]}
+];
+SC[12]=function(s){if(s.ev==null)s.ev=Math.floor(Math.random()*EVENTS.length);var e=EVENTS[s.ev];var o={day:4,variant:'event'};for(var k in e)o[k]=e[k];o.talk='What backup plan would have made this problem smaller?';return o};
+
+SC[13]={day:5,title:'Showtime: Serve the Feast',best:'b',cast:['ceo@240@happy','rose@400@happy','joe@560@happy'],props:['table@640','turkeyCooked@390'],say:[[240,52,'Dinner is served!']],
+ desc:'A long table filled with a golden turkey. You, Grandma Rose, and Grandpa Joe smile in the foreground.',
+ story:function(s){return 'Thursday, 4 P.M. It is showtime. '+s.guests+' guests are seated or hovering near the table. Service is your last operations decision, and it is where quality, communication, and teamwork meet. How will you serve?'},
+ choices:[
+  {k:'a',t:'Family style, with a menu announcement and a thank-you to the crew by name',d:'Warm and personal.',fx:{sat:14,mor:10,kit:-3},style:'demo',out:'Bowls travel around the table, and you introduce each dish and the person who made it. Every cook beams.',concept:['Customer Experience','How a product is delivered shapes how customers remember it. Personal touches turn a meal into a memory.']},
+  {k:'b',t:'Buffet line with labeled dishes and allergen cards',d:'Efficient and considerate.',fx:{sat:10,kit:10,mor:4},style:'deleg',out:'The line moves smoothly, the labels prevent confusion, and guests with dietary needs feel looked after.',concept:['Process Design and Customer Care','Labels, flow, and clear information improve efficiency and protect customers.']},
+  {k:'c',t:'Formal plated service',d:'Elegant, but demanding.',fx:function(s){return s.kit>=55?{sat:14,mor:-3}:{sat:-10,mor:-8,kit:-5}},style:'auto',out:function(s){return s.kit>=55?'Your kitchen is in good shape, so the plates glide out perfectly. Guests feel like they are at a restaurant.':'The kitchen is not ready for plating. Plates leave late and the last guest receives theirs after the first has finished.'},concept:['Matching Service to Capacity','A premium service needs strong operations behind it. Without that, it lowers quality instead of raising it.']}
+ ],talk:'How does the way a product is delivered change how customers judge it?'};
+
+SC[14]={day:5,title:'Grandma Rose Reviews the Feast',best:'c',cast:['rose@260@happy','ceo@430@happy','maya@590@happy'],props:['pie@640','gravy@110'],say:[[260,52,'Feedback time.']],
+ desc:'Grandma Rose holds a spoon like a microphone beside you and Maya, with a pie and gravy boat nearby.',
+ story:'Thursday, 6 P.M. The plates are scraped clean. Grandma Rose taps her glass and announces that it is time for customer feedback. Every leader faces this moment: what will you do with the credit and the feedback?',
+ choices:[
+  {k:'a',t:'Give a speech that takes the credit',d:'Own the spotlight.',fx:{mor:-12,sat:2},style:'auto',out:'The applause is polite. The crew exchanges looks, and Maya starts rolling her eyes in slow motion.',concept:['Credit and Motivation','Taking all the credit weakens loyalty. People work harder for leaders who notice them.']},
+  {k:'b',t:'Collect feedback in a gravy-boat suggestion box',d:'Learn for next year.',fx:{sat:8,mor:5},style:'demo',out:'Notes flow in: more sage, a quieter oven, fewer mystery casseroles. You staple them to next year\'s plan.',concept:['Continuous Improvement','Collecting customer feedback and acting on it makes each cycle better than the last.']},
+  {k:'c',t:'Toast the crew and name what each person contributed',d:'Share the credit, then collect feedback.',fx:{mor:16,sat:8},style:'deleg',out:'You raise your glass to Linda\'s pies, Maya\'s tracker, Dave\'s pie parfaits, and Joe\'s carving. Everyone sits a little taller. Then you ask for suggestions, and ideas pour in.',concept:['Sharing Credit','Specific, public appreciation builds a team that will volunteer again. It also opens people up to share honest feedback.']},
+  {k:'d',t:'Start cleaning right away',d:'Dishes will not wash themselves.',fx:{kit:4,mor:-6,sat:-3},style:'lais',out:'Efficient, yes. But nobody gets a moment to celebrate. The dishes are done and the mood is flat.',concept:['Closing the Loop','Skipping a celebration and review loses the chance to thank people and learn.']}
+ ],talk:'What is the difference between thanking people and learning from them? Do you need both?'};
+
+function getScene(id){var sc=SC[id];return typeof sc==='function'?sc(S):sc}
+function scText(sc){return typeof sc.story==='function'?sc.story(S):sc.story}
+
+/* ---------- badges ---------- */
+var BADGES={1:'Master Planner',2:'Supply Chain Star',3:'People Champion',4:'Crisis Commander',5:'Feast Finale Hero'};
+var TIER={gold:['#f2b134','#8a5a00','Gold',3],silver:['#d5dbe0','#4d575f','Silver',2],bronze:['#cd8a4b','#6b3d12','Bronze',1]};
+function loadStore(){try{var o=JSON.parse(localStorage.getItem('tdi_store'));if(o&&o.badges)return o}catch(e){}return {badges:{},plays:0,best:0}}
+function saveStore(o){try{localStorage.setItem('tdi_store',JSON.stringify(o))}catch(e){}}
+function badgeSvg(day,tier){
+  var t=tier?TIER[tier]:['#e6dcc6','#8a7d63','Locked',0];
+  return '<svg width="76" height="92" viewBox="0 0 76 92" aria-hidden="true" focusable="false"><path d="M22 52 L12 90 L26 82 L38 90 L38 56Z" fill="#a1261b"/><path d="M54 52 L64 90 L50 82 L38 90 L38 56Z" fill="#7d1c13"/><circle cx="38" cy="34" r="30" fill="'+t[0]+'" stroke="'+t[1]+'" stroke-width="4"/><circle cx="38" cy="34" r="22" fill="none" stroke="'+t[1]+'" stroke-width="2" stroke-dasharray="3 3"/>'+(tier?'<text x="38" y="30" text-anchor="middle" font-size="11" font-weight="800" fill="'+t[1]+'" font-family="Trebuchet MS,sans-serif">DAY</text><text x="38" y="52" text-anchor="middle" font-size="26" font-weight="900" fill="'+t[1]+'" font-family="Trebuchet MS,sans-serif">'+day+'</text>':'<path d="M30 36 v-6 a8 8 0 0 1 16 0 v6 M27 36 h22 v16 h-22Z" fill="none" stroke="'+t[1]+'" stroke-width="3"/>')+'</svg>';
+}
+function badgeCard(day,tier,isNew){
+  var t=tier?TIER[tier]:null;
+  return '<div class="badge'+(tier?'':' locked')+(isNew?' new pop':'')+'">'+badgeSvg(day,tier)+'<strong>'+BADGES[day]+'</strong><span class="tier">'+(t?t[2]+' badge'+(isNew?' (new!)':''):'Locked: play this day')+'</span></div>';
+}
+function dayTier(day){
+  var L=S.log.filter(function(l){return l.day===day});if(!L.length)return null;
+  var b=L.filter(function(l){return l.best}).length;
+  return b===L.length?'gold':(b*2>=L.length?'silver':'bronze');
+}
+function awardDay(day){
+  if(S.badges[day])return;
+  var tier=dayTier(day);if(!tier)return;
+  S.badges[day]=tier;
+  var st=loadStore(),old=st.badges[day];
+  if(!old||TIER[tier][3]>TIER[old][3])st.badges[day]=tier;
+  saveStore(st);
+}
+function shelf(mode){
+  var st=loadStore(),h='<div class="badges">';
+  for(var d=1;d<=5;d++){
+    if(mode==='run'){h+=badgeCard(d,S.badges[d]||null,!!S.badges[d])}
+    else h+=badgeCard(d,st.badges[d]||null,false);
+  }
+  return h+'</div>';
+}
+
+/* ---------- gameplay ---------- */
+function applyFx(fx){
+  var d=[];
+  ['cash','sat','kit','mor','guests'].forEach(function(k){
+    var v=fx[k];if(!v)return;
+    var before=S[k];
+    S[k]=(k==='cash'||k==='guests')?before+v:clamp(before+v,0,100);
+    var real=S[k]-before;
+    if(real!==0)d.push({k:k,v:real});
+  });
+  return d;
+}
+function deltaText(d){
+  if(!d.length)return 'No change to your numbers.';
+  return d.map(function(x){var a=Math.abs(x.v);
+    if(x.k==='cash')return (x.v<0?'Cash, minus ':'Cash, plus ')+a+' dollars';
+    return LAB[x.k]+(x.v<0?', minus ':', plus ')+a}).join('. ')+'.';
+}
+function chips(d){
+  if(!d.length)return '<li class="chip up">No change to your numbers</li>';
+  return d.map(function(x){
+    var up=x.v>0,a=Math.abs(x.v),txt;
+    if(x.k==='cash')txt=(up?'+':'-')+'$'+a+' Cash';else txt=(up?'+':'-')+a+' '+LAB[x.k];
+    return '<li class="chip '+(up?'up':'down')+'"><span aria-hidden="true">'+(up?'▲':'▼')+'</span> '+esc(txt)+'<span class="sr-only">'+(up?' (increase)':' (decrease)')+'</span></li>';
+  }).join('');
+}
+function hud(){
+  var h=$('#hud');
+  if(['title','setup'].indexOf(S.phase)>=0){h.className='';return}
+  h.className='on';
+  var cashPct=S.start?clamp(S.cash/S.start*100,0,100):0;
+  function m(k,label,value,pct,ic){return '<div class="meter" id="m_'+k+'"><div class="lab">'+ic+' '+label+'</div><div class="val">'+value+'</div><div class="bar" aria-hidden="true"><i style="width:'+pct+'%"></i></div></div>'}
+  h.innerHTML='<div class="hudgrid">'+
+   m('cash','Cash',money(S.cash),cashPct,ICON.cash)+
+   m('sat','Guest Happiness',Math.round(S.sat)+' / 100',S.sat,ICON.sat)+
+   m('kit','Kitchen Readiness',Math.round(S.kit)+' / 100',S.kit,ICON.kit)+
+   m('mor','Crew Morale',Math.round(S.mor)+' / 100',S.mor,ICON.mor)+
+   '<div class="meter" id="m_guests"><div class="lab">'+ICON.guests+' Guests</div><div class="val">'+S.guests+'</div><div class="bar" aria-hidden="true"><i style="width:'+clamp(S.guests/34*100,0,100)+'%;background:#1d5a8a"></i></div></div>'+
+   '</div>';
+}
+function pulseMeters(d){d.forEach(function(x){var el=$('#m_'+x.k);if(el){el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse')}})}
+function pills(sc){
+  var idx=S.step+1,tot=seq().length,dn=DAYS[sc.day];
+  return '<div class="pills"><span class="pill">Day '+dn.n+': '+dn.name+'</span><span class="pill alt">'+esc(dn.focus)+'</span><span class="pill alt">Decision '+idx+' of '+tot+'</span></div>';
+}
+function focusH(){var h=$('#view h1')||$('#view h2');if(h){h.setAttribute('tabindex','-1');h.focus({preventScroll:false})}window.scrollTo(0,0)}
+function announce(t){var s=$('#sr');s.textContent='';setTimeout(function(){s.textContent=t},50)}
+
+var V=$('#view');
+
+function vTitle(){
+  var saved=null;try{saved=localStorage.getItem('tdi_save')}catch(e){}
+  V.innerHTML=
+  '<div class="stagewrap">'+heroStage()+'</div>'+
+  '<p class="sr-only">Cartoon scene: a turkey wearing a chef hat and a tie stands in the center with colorful tail feathers. Aunt Linda, Grandpa Joe, Cousin Dave, and Maya stand beside it. A sign reads Thanksgiving Dinner, Incorporated.</p>'+
+  '<div class="card"><h1 id="h1">Thanksgiving Dinner, Inc.</h1><p style="font-size:1.1rem;margin-top:0">A management simulation where the product is dinner and the deadline is four o\'clock on Thursday.</p>'+
+  '<h2>Warm Up</h2><div class="poem" id="poem">'+
+  '<p>&rsquo;Twas the week before Thanksgiving, and all through the class,</p><p>Both teachers and students were running out of gas.</p><p>The coffee was cold, motivation was low,</p><p>And nobody wanted another PowerPoint show.</p>'+
+  '<p>So put down your textbooks, let\'s have a little fun,</p><p>We\'ve got a Thanksgiving business to run!</p><p>A turkey to manage, a budget to keep,</p><p>And relatives arriving while you dream of sleep.</p>'+
+  '<p>Who\'s the CEO? Who\'s managing the crew?</p><p>And what if the turkey\'s still frozen? That\'s on you!</p></div>'+
+  '<div class="row"><button class="btn ghost" data-act="poem">Hear the Warm Up poem</button><button class="btn ghost" data-act="stopnar">Stop narration</button></div></div>'+
+  '<div class="card"><div class="goals"><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 6 C18 6 10 17 10 27 c0 8 5 12 8 17 v6 h28 v-6 c3-5 8-9 8-17 C54 17 46 6 32 6Z" fill="#ffd54a" stroke="#8a5a00" stroke-width="3"/><rect x="21" y="52" width="22" height="6" rx="3" fill="#8a5a00"/><rect x="25" y="58" width="14" height="4" rx="2" fill="#8a5a00"/><path d="M24 22 q8 -10 16 0" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/></svg>'+
+  '<div><h2 style="margin-top:0">What you need to know</h2><p style="margin:.1em 0"><strong>By the end of this lesson, you will learn:</strong></p><ul>'+
+  '<li>how scope, budget, and cost per guest shape the choices a manager can make</li>'+
+  '<li>how lead times and bottlenecks decide whether a plan finishes on time</li>'+
+  '<li>how leadership and conflict styles change team morale</li>'+
+  '<li>how managers respond to a crisis with contingency plans and honest communication</li></ul></div></div>'+
+  '<div class="eq"><strong>Essential Question:</strong> How do managers make good decisions when time, money, and people are all limited?</div></div>'+
+  (function(){var st=loadStore();var any=Object.keys(st.badges).length;return '<div class="card"><h2 style="margin-top:0">Your Badge Collection</h2>'+shelf('store')+'<p style="margin:.6em 0 0">'+(any?'Plays completed: '+st.plays+'. Best score: '+st.best+' out of 100.':'Finish a day to earn your first badge. You can replay as many times as you like.')+'</p></div>'})()+
+  '<div class="row"><button class="btn big" data-act="toSetup">Open for Business</button>'+(saved?'<button class="btn ghost big" data-act="resume">Resume Saved Run</button>':'')+'</div>';
+  announce('Welcome to Thanksgiving Dinner, Incorporated.');
+}
+function vSetup(){
+  V.innerHTML=
+  '<div class="card"><h1 id="h1">Set Up Your Company</h1>'+
+  '<p>Play alone, in pairs, or in a team of four. Teams can split the jobs of CEO, Operations Chief, Finance Chief, and People Chief and talk each decision over before clicking.</p>'+
+  '<label class="fld" for="ceoName">CEO name (optional)</label><input type="text" id="ceoName" autocomplete="off" maxlength="30" value="'+esc(S.ceo)+'" placeholder="For example: Chief Gravy Officer Sam">'+
+  '<fieldset style="border:0;padding:0;margin:16px 0 0"><legend class="fld">Choose your run</legend><div class="grid2">'+
+  '<label class="modecard"><input type="radio" name="mode" value="express" checked><strong>Express: One Class Period (45 minutes)</strong><br><small>Eight key decisions in one sitting, then a quick debrief. Perfect for a single class.</small></label>'+
+  '<label class="modecard"><input type="radio" name="mode" value="extended"><strong>Extended: Five-Day Run</strong><br><small>Fourteen decisions across five days (Monday to Thursday dinner), with daily news, discussion prompts, and save and resume.</small></label>'+
+  '</div></fieldset>'+
+  '<div class="setrow"><input type="checkbox" id="chkNar2"'+(CFG.nar?' checked':'')+'><label for="chkNar2">Read each scene aloud (narration)</label></div>'+
+  '<div class="row"><button class="btn big" data-act="start">Start the Simulation</button><button class="btn ghost" data-act="toTitle">Back</button></div></div>';
+}
+function vScene(){
+  var id=seq()[S.step],sc=getScene(id);
+  if(!S.order[id])S.order[id]=shuffle(sc.choices.map(function(c){return c.k}));
+  var ord=S.order[id],LET='ABCD';
+  var html=ord.map(function(k,i){
+    var c=sc.choices.filter(function(x){return x.k===k})[0];
+    return '<button class="choice" data-act="pick" data-k="'+k+'"><span class="ltr" aria-hidden="true">'+LET[i]+'</span><span><strong><span class="sr-only">Option '+LET[i]+': </span>'+esc(val(c.t))+'</strong><br><small>'+esc(val(c.d)||'')+'</small></span></button>';
+  }).join('');
+  var story=scText(sc);
+  V.innerHTML=pills(sc)+
+   '<div class="stagewrap">'+stage(sc)+'</div><p class="sr-only">Scene picture: '+esc(sc.desc)+'</p>'+
+   '<h1 id="h1" style="margin-top:14px">'+esc(sc.title)+'</h1>'+
+   '<section class="narr" aria-label="Narrator"><p>'+esc(story)+'</p><div class="row"><button class="btn ghost" data-act="replay">Replay narration</button><button class="btn ghost" data-act="stopnar">Stop narration</button></div></section>'+
+   '<h2>What will you do?</h2><div class="choices" role="group" aria-label="Your options">'+html+'</div>';
+  var spoken=story+' Here are your choices. '+ord.map(function(k,i){var c=sc.choices.filter(function(x){return x.k===k})[0];return 'Option '+LET[i]+'. '+val(c.t)+'.'}).join(' ');
+  say(spoken);
+}
+function pick(k){
+  var id=seq()[S.step],sc=getScene(id),c=sc.choices.filter(function(x){return x.k===k})[0];if(!c)return;
+  if(c.init){S.cash=c.init.cash;S.start=c.init.start;S.guests=c.init.guests}
+  var fx=val(c.fx)||{};
+  var d=applyFx(fx);
+  if(c.set)for(var q in c.set)S.flags[q]=c.set[q];
+  if(c.style)S.style[c.style]++;
+  S.log.push({id:id,day:sc.day,title:sc.title,choice:val(c.t),concept:c.concept[0],best:(k===sc.best)});
+  S.last={id:id,k:k,d:d};
+  S.phase='fb';autosave();render();pulseMeters(d);
+}
+function vFeedback(){
+  var id=S.last.id,sc=getScene(id),c=sc.choices.filter(function(x){return x.k===S.last.k})[0],d=S.last.d;
+  var better='';
+  if(S.last.k!==sc.best){var b=sc.choices.filter(function(x){return x.k===sc.best})[0];better='<div class="hint"><strong>Another strong move:</strong> '+esc(val(b.t))+'. '+esc(b.concept[0])+' shows up in that choice.</div>'}
+  var more=S.step<seq().length-1;
+  var nextDay=more&&S.mode==='extended'&&getScene(seq()[S.step+1]).day!==sc.day;
+  var label=!more?'See the Results':(nextDay?'End of Day '+sc.day+': Read the News':'Next Decision');
+  var out=val(c.out);
+  V.innerHTML=pills(sc)+
+   '<div class="stagewrap">'+stage(sc)+'</div><p class="sr-only">Scene picture: '+esc(sc.desc)+'</p>'+
+   '<h1 id="h1" style="margin-top:14px">Result: '+esc(sc.title)+'</h1>'+
+   '<section class="card" aria-label="Outcome"><h2 style="margin-top:0">You chose: '+esc(val(c.t))+'</h2><p style="font-size:1.08rem">'+esc(out)+'</p>'+
+   '<h3>What changed</h3><ul class="deltas">'+chips(d)+'</ul></section>'+
+   '<section class="concept"><h3>Business Concept: '+esc(c.concept[0])+'</h3><p style="margin:0">'+esc(c.concept[1])+'</p></section>'+better+
+   '<details class="talk"><summary>Table Talk (optional)</summary><p style="margin:.5em 0 0">'+esc(sc.talk)+'</p></details>'+
+   '<div class="row"><button class="btn big" data-act="next">'+label+'</button></div>';
+  say(out+' '+deltaText(d)+' Business concept: '+c.concept[0]+'. '+c.concept[1]);
+  announce('Result shown. '+deltaText(d));
+}
+function next(){
+  var sc=getScene(S.last.id);
+  var more=S.step<seq().length-1;
+  if(!more){S.phase='results';S.step=seq().length;render();return}
+  var nx=getScene(seq()[S.step+1]);
+  if(S.mode==='extended'&&nx.day!==sc.day){awardDay(sc.day);S.phase='day';S.dayDone=sc.day;render();return}
+  S.step++;S.phase='scene';render();
+}
+function gazette(day){
+  var good=(S.kit+S.mor)/2>=55;
+  var H={1:[['CEO Announces Master Plan; Gravy Futures Soar','Plan Announced; Plan Immediately Revised'],'The company has a scope, a budget, and a crew with jobs.'],
+         2:[['Supply Chain Holds; Cranberries Located','Cranberry Crisis Grips Kitchen; Experts Shrug'],'Shopping is done and the oven schedule is the next battle.'],
+         3:[['Crew Morale High; Stuffing Truce Holds','Crew Threatens Nap Strike; Rolls Pile Up'],'Wednesday night is where a leader\'s style shows.'],
+         4:[['Crisis Averted: Dinner Is Still On','Dinner at Risk; Everyone Learns About Contingency Plans'],'The big day has arrived, and the pressure is real.']};
+  var h=H[day];if(!h)return '';
+  return '<div class="gazette"><div class="mast">The Daily Gravy Gazette</div><h2>'+esc(h[0][good?0:1])+'</h2><p style="margin:0;font-style:italic">'+esc(h[1])+'</p></div>';
+}
+var BRIEF={1:['What constraint will limit your plan the most?','How did your job assignments match people\'s strengths?'],
+ 2:['Where is your bottleneck, and how did you manage it?','Which cost did you trade for time, or time for cost?'],
+ 3:['Which conflict style did you use, and what happened to morale?','What motivates your crew, and how can you tell?'],
+ 4:['What contingency plan would you write for next year?','How did you communicate during the crisis?']};
+function vDay(){
+  var d=S.dayDone,dn=DAYS[d],nd=DAYS[d+1];
+  V.innerHTML='<div class="pills"><span class="pill">End of Day '+d+': '+dn.name+'</span></div>'+
+  '<h1 id="h1">End of Day '+d+' Report</h1>'+gazette(d)+
+  '<div class="card"><h2 style="margin-top:0">Badge Earned</h2><div class="badges" style="max-width:230px">'+badgeCard(d,S.badges[d],true)+'</div><p style="margin:.6em 0 0">Badges come in Bronze, Silver, and Gold. Gold means every choice that day matched the strongest business idea. Play again any time to upgrade a badge.</p></div>'+
+  
+  '<div class="card"><h2 style="margin-top:0">Boardroom Brief (Table Talk)</h2><ul><li>'+esc(BRIEF[d][0])+'</li><li>'+esc(BRIEF[d][1])+'</li></ul>'+
+  '<p style="margin:.4em 0 0">Next up: <strong>Day '+nd.n+', '+nd.name+'</strong>, with a focus on '+esc(nd.focus.toLowerCase())+'.</p></div>'+
+  '<div class="row"><button class="btn big" data-act="nextDay">Continue to Day '+nd.n+'</button><button class="btn ghost" data-act="saveExit">Save and Finish for Today</button></div>';
+  say('End of Day '+d+'. '+$('.gazette h2',V).textContent+'. You earned the '+BADGES[d]+' badge, '+TIER[S.badges[d]][2]+' level. Discuss: '+BRIEF[d][0]+' '+BRIEF[d][1]);
+  autosave();
+}
+function score(){
+  var ratio=S.start?S.cash/S.start:0;
+  var cashScore=clamp(Math.round(60+ratio*200),0,100);
+  var total=Math.round(S.sat*.35+S.kit*.2+S.mor*.25+cashScore*.2);
+  return {cashScore:cashScore,total:total};
+}
+function rankFor(t){
+  if(t>=82)return ['Chief Gravy Officer','Standing ovation from the whole table.'];
+  if(t>=68)return ['Executive Sous Chef','A dinner worth repeating, with a few stories to tell.'];
+  if(t>=54)return ['Regional Manager of Rolls','Dinner happened, and everyone learned something delicious.'];
+  return ['Rising Dishwasher Executive','A rough shift that taught a lot. Next year\'s plan will be legendary.'];
+}
+function myStyle(){var best='',m=-1;for(var k in S.style){if(S.style[k]>m){m=S.style[k];best=k}}return m<=0?null:best}
+var QS=[
+ {q:'Which idea describes the single resource or step that limits how fast the whole dinner can be finished?',opts:['Bottleneck','Break-even point','Span of control','Market share'],a:0,why:'The oven was the bottleneck. Managers schedule around it, add capacity, or move other tasks earlier.'},
+ {q:'Aunt Linda and Cousin Dave each wanted their stuffing recipe. Making both and running a taste test is an example of which conflict style?',opts:['Competing','Collaborating','Avoiding','Accommodating'],a:1,why:'Collaborating finds a solution that meets both sides\' needs, even though it takes more effort.'},
+ {q:'Why is a frozen turkey on Thursday morning a management problem rather than bad luck?',opts:['The price was too high','There were too many guests','The lead time was not planned','The oven was too small'],a:2,why:'Lead time is the delay between starting and finishing. A planned thaw would have prevented the crisis.'},
+ {q:'Which action best protects trust with guests when a problem appears?',opts:['Hide the problem','Blame someone quietly','Tell people honestly and offer a backup','Wait and hope nobody notices'],a:3,why:'Transparency, with a backup plan, builds trust even when something goes wrong.'}
+];
+function vResults(){
+  for(var dd=1;dd<=5;dd++)awardDay(dd);
+  if(!S.counted){S.counted=true;var stt=loadStore();stt.plays=(stt.plays||0)+1;stt.best=Math.max(stt.best||0,score().total);saveStore(stt)}
+  var sc=score(),r=rankFor(sc.total),st=myStyle();
+  if(!S.qOrder){S.qOrder=QS.map(function(q){var idx=q.opts.map(function(_,i){return i});return shuffle(idx)})}
+  var concepts={};S.log.forEach(function(l){concepts[l.concept]=1});
+  var clist=Object.keys(concepts);
+  var bestN=S.log.filter(function(l){return l.best}).length;
+  var qh=QS.map(function(q,qi){
+    var ans=S.qa[qi];
+    var h='<div class="card" id="q'+qi+'"><h3 style="margin-top:0">Check '+(qi+1)+' of '+QS.length+'</h3><p>'+esc(q.q)+'</p>';
+    S.qOrder[qi].forEach(function(oi,pos){
+      var cls='qopt';
+      if(ans!==undefined){if(oi===q.a)cls+=' right';else if(oi===ans)cls+=' wrong'}
+      h+='<button class="'+cls+'" data-act="qa" data-q="'+qi+'" data-o="'+oi+'"'+(ans!==undefined?' disabled':'')+'><strong>'+'ABCD'[pos]+'.</strong> '+esc(q.opts[oi])+(ans!==undefined&&oi===q.a?' <span class="sr-only">(correct answer)</span>':'')+'</button>';
+    });
+    if(ans!==undefined)h+='<p role="status"><strong>'+(ans===q.a?'Nice work. ':'Not this time. ')+'</strong>'+esc(q.why)+'</p>';
+    return h+'</div>';
+  }).join('');
+  var revOpts=S.log.map(function(l,i){return '<option value="'+i+'"'+(String(S.revise)===String(i)?' selected':'')+'>'+esc(l.title)+': '+esc(l.choice)+'</option>'}).join('');
+  var name=S.ceo?S.ceo:'The CEO';
+  V.innerHTML=
+  '<div class="stagewrap noprint">'+stage({props:['confetti'],cast:['ceo@170@happy','linda@300@happy','maya@500@happy','joe@630@happy'],say:[[400,52,'Best Thanksgiving ever!']]})+'</div>'+
+  '<h1 id="h1" style="margin-top:14px">Dinner Is Served: Final Report</h1>'+
+  '<div class="card"><div class="grid2"><div><div class="score">'+sc.total+'<span style="font-size:1.4rem"> / 100</span></div><p style="margin:.2em 0"><strong>Overall company score</strong></p><h2 style="margin:.3em 0 0">'+esc(r[0])+'</h2><p style="margin:.2em 0">'+esc(r[1])+'</p></div>'+
+  '<div><p style="margin:.2em 0"><strong>Final numbers</strong></p><ul style="margin:.2em 0 .2em 1.1em;padding:0"><li>Cash left: '+money(S.cash)+' of '+money(S.start)+'</li><li>Guest Happiness: '+Math.round(S.sat)+' / 100</li><li>Kitchen Readiness: '+Math.round(S.kit)+' / 100</li><li>Crew Morale: '+Math.round(S.mor)+' / 100</li><li>Guests served: '+S.guests+'</li></ul></div></div>'+
+  '<p style="margin-top:.8em">Score weights: Guest Happiness 35 percent, Crew Morale 25 percent, Kitchen Readiness 20 percent, Cash 20 percent. There is no single right path, and every decision below taught something.</p></div>'+
+  '<div class="card"><h2 style="margin-top:0">Badges From This Run</h2>'+shelf('run')+'<p style="margin:.6em 0 0">Locked badges belong to days not played in this run. Replay to earn them or to upgrade Bronze and Silver to Gold.</p></div>'+
+  '<div class="card"><h2 style="margin-top:0">Your Leadership Style</h2>'+(st?'<p><strong>'+STYLES[st]+'</strong></p><p>'+STYLEDESC[st]+'</p>':'<p><strong>Balanced Manager</strong></p><p>You mixed approaches. Flexible leaders adapt their style to the situation.</p>')+
+  '<p>Strong choices made: <strong>'+bestN+' of '+S.log.length+'</strong>. Strong does not mean perfect. Managers often choose among good options.</p></div>'+
+  '<div class="card"><h2 style="margin-top:0">Business Concepts You Used</h2><ul style="columns:2;margin:0 0 0 1.1em;padding:0">'+clist.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul></div>'+
+  '<div class="card noprint"><h2 style="margin-top:0">Your Decisions</h2><table class="t"><thead><tr><th scope="col">Decision</th><th scope="col">What you chose</th></tr></thead><tbody>'+S.log.map(function(l){return '<tr><td>'+esc(l.title)+'</td><td>'+esc(l.choice)+'</td></tr>'}).join('')+'</tbody></table></div>'+
+  '<div class="noprint"><h2 class="ondark">Debrief Checks</h2>'+qh+'</div>'+
+  '<div class="card noprint"><h2 style="margin-top:0">Revise Your Plan</h2><p>Good managers revise after feedback. Choose one decision you would change next year.</p><label class="fld" for="selRev">Decision to revise</label><select id="selRev"><option value="">Choose one</option>'+revOpts+'</select>'+
+  '<label class="fld" for="txtNote" style="margin-top:12px">What would you do instead, and why? (optional)</label><textarea id="txtNote" placeholder="Short and specific is great.">'+esc(S.note)+'</textarea></div>'+
+  '<div class="card cert"><div class="sr-only">Certificate</div><p style="margin:0;letter-spacing:3px;text-transform:uppercase;font-size:.8rem">Certificate of Management Survival</p><h2>'+esc(name)+'</h2><p style="margin:0">has successfully led <strong>Thanksgiving Dinner, Inc.</strong> and earned the title of</p><h2 style="margin-top:.2em">'+esc(r[0])+'</h2><p style="margin:0">Company score: '+sc.total+' of 100 &nbsp;|&nbsp; Leadership style: '+(st?STYLES[st]:'Balanced Manager')+'</p></div>'+
+  '<div class="row noprint"><button class="btn" data-act="copy">Copy My Results</button><button class="btn ghost" data-act="print">Print Certificate</button><button class="btn ghost" data-act="again">Play Again With a New Strategy</button></div>'+
+  '<p id="copyMsg" role="status" class="noprint" style="color:#fff3dc;font-weight:700"></p>';
+  say('Dinner is served. Your company score is '+sc.total+' out of 100. Your title is '+r[0]+'. '+r[1]);
+  try{localStorage.removeItem('tdi_save')}catch(e){}
+}
+function resultsText(){
+  var sc=score(),r=rankFor(sc.total),st=myStyle();
+  var t='Thanksgiving Dinner, Inc. Results\nCEO: '+(S.ceo||'(not entered)')+'\nRun: '+(S.mode==='express'?'Express (one class period)':'Extended (five days)')+
+   '\nScore: '+sc.total+'/100 | Title: '+r[0]+'\nLeadership style: '+(st?STYLES[st]:'Balanced Manager')+
+   '\nCash left: '+money(S.cash)+' of '+money(S.start)+' | Guest Happiness '+Math.round(S.sat)+' | Kitchen Readiness '+Math.round(S.kit)+' | Crew Morale '+Math.round(S.mor)+' | Guests '+S.guests+'\nDecisions:\n';
+  S.log.forEach(function(l){t+='- '+l.title+': '+l.choice+'\n'});
+  if(S.revise!==''&&S.log[S.revise])t+='Would revise: '+S.log[S.revise].title+(S.note?' | '+S.note:'')+'\n';
+  return t;
+}
+
+/* ---------- save/resume ---------- */
+function autosave(){try{if(S.phase!=='title'&&S.phase!=='setup'&&S.phase!=='results')localStorage.setItem('tdi_save',JSON.stringify(S))}catch(e){}}
+function resume(){try{var j=localStorage.getItem('tdi_save');if(j){S=JSON.parse(j);if(S.phase==='fb'||S.phase==='day'){/* ok */}render();return}}catch(e){}}
+
+/* ---------- clock ---------- */
+var t0=null;
+setInterval(function(){if(!CFG.clock||!t0)return;var s=Math.floor((Date.now()-t0)/1000);$('#clock').textContent='Elapsed '+Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)},1000);
+
+/* ---------- render ---------- */
+function render(){
+  ({title:vTitle,setup:vSetup,scene:vScene,fb:vFeedback,day:vDay,results:vResults})[S.phase]();
+  hud();focusH();
+}
+
+/* ---------- teacher guide ---------- */
+function teacherHtml(){
+  var rows=[
+   ['1','Monday: Strategy and Budget','Scenes 1 to 3','Build a one-page budget: guests times cost per plate, plus a 10 percent safety cushion.','Which constraint hurt the most: money, time, or people?'],
+   ['2','Tuesday: Operations and Supply Chain','Scenes 4 to 6','Draw a critical-path timeline for Thursday, working backward from 4 P.M. Circle the bottleneck.','What did the turkey choice cost in time or money?'],
+   ['3','Wednesday: People and Leadership','Scenes 7 to 9','Role-play the stuffing dispute twice, using two different conflict styles. Compare the results.','Which style kept morale highest?'],
+   ['4','Thursday Morning: Crisis Management','Scenes 10 to 12','Write a one-page contingency plan with three risks, a trigger for each, an action, and an owner.','Which warning signs appeared early?'],
+   ['5','Thursday Dinner: Launch and Feedback','Scenes 13 and 14 plus the debrief','Give a 60-second shareholder update to a real audience such as another class. Revise the plan from their feedback.','What would you change for next year, and why?']
+  ];
+  var bestRows='';
+  SEQ_E.forEach(function(id){
+    var list=[];
+    if(id===10){['frozen','fresh','precooked'].forEach(function(v){var fake={flags:{turkey:v==='frozen'?'frozen':(v==='fresh'?'fresh':'precooked')},ev:0,cash:0,guests:16,kit:0};var sc=SC[10](fake);list.push([sc.title+' ('+v+' turkey)',sc])})}
+    else if(id===12){EVENTS.forEach(function(e){list.push([e.title+' (random event)',e])})}
+    else{var sc=SC[id];list.push([sc.title,sc])}
+    list.forEach(function(p){
+      var sc=p[1],b=sc.choices.filter(function(c){return c.k===sc.best})[0];
+      var fakeS={guests:16,kit:60};
+      var t=typeof b.t==='function'?b.t(fakeS):b.t;
+      bestRows+='<tr><td>'+esc(p[0])+'</td><td>'+esc(t)+'</td><td>'+esc(b.concept[0])+'</td></tr>';
+    });
+  });
+  return ''+
+  '<h3>Quick Start (two minutes)</h3><ol><li>Share this file or its link in D2L. Students open it on any device. It needs no login and collects no data.</li><li>Students choose <strong>Express</strong> (one 45-minute period) or <strong>Extended</strong> (five short sessions).</li><li>Sit back with your coffee. Each scene is narrated, each result explains the business idea, and the optional Table Talk prompts keep discussion going without you.</li></ol>'+
+  '<h3>Learning Goals</h3><p><strong>By the end of this lesson, you will learn:</strong> how scope and budget shape choices, how lead times and bottlenecks affect a schedule, how leadership and conflict styles affect morale, and how to respond to a crisis with contingency plans and honest communication.</p>'+
+  '<div class="eq"><strong>Essential Question:</strong> How do managers make good decisions when time, money, and people are all limited?</div>'+
+  '<h3>Express Plan: One 45-Minute Period</h3><ul><li><strong>Warm Up and setup:</strong> the opening poem, learning goals, and mode selection.</li><li><strong>Eight decisions:</strong> scope, menu, turkey, oven, conflict, morning crisis, surprise guests, and service. Each takes a few minutes with narration and feedback.</li><li><strong>Debrief:</strong> final report, leadership style, four click-based checks, and an optional revise step. Turn on the pacing clock in Settings if you want a gentle guide.</li></ul>'+
+  '<h3>Extended Plan: Five Short Sessions</h3><table class="t"><thead><tr><th scope="col">Day</th><th scope="col">Focus</th><th scope="col">Scenes</th><th scope="col">Extension task</th><th scope="col">Discussion question</th></tr></thead><tbody>'+
+  rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td>'+esc(r[4])+'</td></tr>'}).join('')+'</tbody></table>'+
+  '<p>Students can use <em>Save and Finish for Today</em> at the end of each day. Progress is saved in that browser on that device. If the browser blocks saving, the run simply continues without it.</p>'+
+  '<h3>Working Alone or in Teams</h3><p>The simulation works for one student. For teams, suggest four roles: CEO (final click), Operations Chief (kitchen and schedule), Finance Chief (cash and cost per plate), and People Chief (crew morale and conflicts). Rotate the CEO role each day in the Extended run.</p>'+
+  '<h3>Strongest Choice in Each Scene</h3><p>There is no single path to a good score, but this cheat sheet shows the choice that best matches the business idea in each scene. Students receive a gentle hint when they pick another one.</p><table class="t"><thead><tr><th scope="col">Scene</th><th scope="col">Strongest choice</th><th scope="col">Concept</th></tr></thead><tbody>'+bestRows+'</tbody></table>'+
+  '<h3>Vocabulary Students Meet</h3><p>Scope, constraint, cost per unit, lead time, critical path, bottleneck, capacity, delegation, span of control, conflict styles (competing, collaborating, compromising, avoiding), recognition and autonomy, contingency plan, crash cost, redundancy, transparency, continuous improvement.</p>'+
+  '<h3>Accessibility Features</h3><ul><li>Everything is keyboard accessible, with visible focus and a skip link.</li><li>Every animated scene has a text description for screen readers, and every important number is also shown as text, never by color alone.</li><li>Narration reads the full scene, the option titles, the results, and the meter changes aloud. Narration can be turned off or slowed down in Settings.</li><li>Calm mode turns off all animation, and the file also respects the device\'s reduced-motion setting. Larger text is one click away.</li><li>Food safety content follows standard guidance: thaw in the refrigerator, in cold water, or cook from frozen, and never on the counter.</li></ul>'+
+  '<h3>Collecting Student Work</h3><p>At the end, students click <strong>Copy My Results</strong> and paste the summary into a D2L assignment or discussion. They can also print the certificate.</p>';
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act],[data-close]');if(!el)return;
+  var a=el.getAttribute('data-act'),cl=el.getAttribute('data-close');
+  if(cl){$('#'+cl).close();return}
+  switch(a){
+   case 'toSetup':S.phase='setup';render();break;
+   case 'toTitle':S.phase='title';render();break;
+   case 'poem':say('Twas the week before Thanksgiving, and all through the class, both teachers and students were running out of gas. The coffee was cold, motivation was low, and nobody wanted another PowerPoint show. So put down your textbooks, let us have a little fun. We have got a Thanksgiving business to run! A turkey to manage, a budget to keep, and relatives arriving while you dream of sleep. Who is the CEO? Who is managing the crew? And what if the turkey is still frozen? That is on you!');break;
+   case 'start':
+     var m=$('input[name=mode]:checked').value;S=newState(m);S.ceo=$('#ceoName').value.trim();
+     CFG.nar=$('#chkNar2').checked;saveCfg();applyCfg();
+     t0=Date.now();S.phase='scene';render();break;
+   case 'resume':resume();break;
+   case 'pick':pick(el.getAttribute('data-k'));break;
+   case 'next':next();break;
+   case 'nextDay':S.step++;S.phase='scene';render();break;
+   case 'saveExit':S.step++;S.phase='scene';autosave();stopSpeech();S=newState();S.phase='title';V.innerHTML='<div class="card"><h1 id="h1">Progress Saved</h1><p>Your run is saved on this device. Come back to this page tomorrow and choose <strong>Resume Saved Run</strong> to continue with the next day.</p><div class="row"><button class="btn big" data-act="toTitle">Back to the Start</button></div></div>';hud();focusH();break;
+   case 'replay':speak(lastSpoken);break;
+   case 'stopnar':stopSpeech();break;
+   case 'qa':
+     var qi=+el.getAttribute('data-q'),oi=+el.getAttribute('data-o');S.qa[qi]=oi;
+     var y=window.scrollY;vResults();window.scrollTo(0,y);var nq=$('#q'+qi+' [role=status]');if(nq)announce(nq.textContent);break;
+   case 'copy':
+     var txt=resultsText();
+     var done=function(ok){$('#copyMsg').textContent=ok?'Results copied. Paste them into your D2L assignment.':'Copy did not work here. Select and copy the text from the box below.';if(!ok){var ta=document.createElement('textarea');ta.value=txt;ta.setAttribute('aria-label','Your results');ta.style.maxWidth='none';$('#copyMsg').after(ta);ta.select()}};
+     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){done(true)},function(){done(false)})}else done(false);break;
+   case 'print':window.print();break;
+   case 'restartRun':$('#dReset').close();stopSpeech();try{localStorage.removeItem('tdi_save')}catch(e){}S=newState();S.phase='setup';render();break;
+   case 'eraseAll':
+     if(!el.getAttribute('data-sure')){el.setAttribute('data-sure','1');el.textContent='Click again to confirm: erase everything';$('#eraseMsg').textContent='Press the button again to erase all badges and progress.';break}
+     try{localStorage.removeItem('tdi_store');localStorage.removeItem('tdi_save')}catch(e){}
+     el.removeAttribute('data-sure');el.textContent='Erase All Badges and Progress';$('#eraseMsg').textContent='Everything was erased. You are starting fresh.';
+     stopSpeech();S=newState();render();break;
+   case 'again':stopSpeech();S=newState();S.phase='setup';render();break;
+  }
+});
+document.addEventListener('change',function(e){
+  if(e.target.id==='selRev'){S.revise=e.target.value}
+  if(e.target.id==='selVoice'){CFG.voice=e.target.value;TTS.pick=TTS.voices.filter(function(v){return v.name===e.target.value})[0]||TTS.pick;saveCfg();speak('Hello, I am your narrator for Thanksgiving Dinner, Incorporated.')}
+  if(e.target.id==='selRate'){CFG.rate=parseFloat(e.target.value);saveCfg()}
+  if(e.target.id==='chkCalm'){CFG.calm=e.target.checked;saveCfg();applyCfg()}
+  if(e.target.id==='chkBig'){CFG.big=e.target.checked;saveCfg();applyCfg()}
+  if(e.target.id==='chkClock'){CFG.clock=e.target.checked;saveCfg();applyCfg()}
+});
+document.addEventListener('input',function(e){if(e.target.id==='txtNote')S.note=e.target.value});
+$('#btnNar').addEventListener('click',function(){CFG.nar=!CFG.nar;saveCfg();applyCfg();if(!CFG.nar)stopSpeech();else speak(lastSpoken)});
+$('#btnReset').addEventListener('click',function(){$('#eraseMsg').textContent='';var b=$('#btnErase');b.removeAttribute('data-sure');b.textContent='Erase All Badges and Progress';$('#dReset').showModal()});
+$('#btnSet').addEventListener('click',function(){$('#dSet').showModal()});
+$('#btnTeach').addEventListener('click',function(){$('#teachBody').innerHTML=teacherHtml();$('#dTeach').showModal()});
+if(TTS.ok){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+window.addEventListener('beforeunload',stopSpeech);
+loadCfg();applyCfg();render();
+})();
+</script>
+</body>
+</html>
