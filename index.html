@@ -136,7 +136,20 @@ dialog .db{padding:14px 20px 22px}
 .badge span.tier{display:inline-block;font-weight:800;font-size:.8rem;margin-top:2px}
 .badge.locked{opacity:.75;background:#f1e8d6}
 .badge.new{border-color:var(--gold);box-shadow:0 0 0 4px var(--gold)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+[hidden]{display:none!important}
+.choicewrap{display:grid;gap:4px}
+.votes{display:flex;align-items:center;gap:10px;background:#f3ecff;border:2px solid #5b3a96;border-radius:12px;padding:4px 12px;font-weight:800;color:#3d2468}
+.votes output{min-width:2ch;text-align:center;font-size:1.2rem}
+.vb{width:44px;height:44px;border-radius:50%;border:3px solid #5b3a96;background:#fff;color:#3d2468;font:inherit;font-weight:900;font-size:1.3rem;cursor:pointer}
+.vb:hover{background:#e6dbff}
+.huddle{border-color:#1d5a8a;background:#eef6fc}
+.tealbox{border-color:#5b3a96;background:#f7f2ff}
+.daychk{display:flex;gap:10px;align-items:flex-start;background:#fff;border:3px solid var(--line);border-radius:12px;padding:8px 12px;margin:6px 0}
+.daychk input{width:22px;height:22px;margin-top:3px}
+.timer{font-variant-numeric:tabular-nums;font-weight:900;font-size:1.3rem}
 @media (max-width:760px){
+  .grid3{grid-template-columns:1fr}
   .hudgrid{grid-template-columns:repeat(2,1fr)}
   .grid2{grid-template-columns:1fr}
   .goals{flex-direction:column}
@@ -373,9 +386,19 @@ var STYLEDESC={auto:'You decide fast and take charge. In a crisis that speed is 
   deleg:'You match tasks to strengths and trust people to deliver. That frees you to watch the big picture.',
   lais:'You let things unfold. People get freedom, but problems can grow unnoticed until the smoke alarm announces them.'};
 var S;
-function newState(mode){return {phase:'title',mode:mode||'express',step:0,cash:0,start:0,sat:50,kit:40,mor:60,guests:0,flags:{},style:{auto:0,demo:0,deleg:0,lais:0},log:[],ev:null,order:{},ceo:'',last:null,qa:{},revise:'',note:'',badges:{},counted:false}}
+function newState(mode){return {phase:'title',mode:mode||'express',step:0,cash:0,start:0,sat:50,kit:40,mor:60,guests:0,flags:{},style:{auto:0,demo:0,deleg:0,lais:0},log:[],ev:null,order:{},ceo:'',last:null,qa:{},revise:'',note:'',badges:{},counted:false,days:[1,2,3,4,5],play:'solo',team:[],votes:{}}}
 S=newState();
-function seq(){return S.mode==='express'?SEQ_X:SEQ_E}
+var SCDAY={1:1,2:1,3:1,4:2,5:2,6:2,7:3,8:3,9:3,10:4,11:4,12:4,13:5,14:5};
+function seq(){if(S.mode==='express')return SEQ_X;var d=S.days||[1,2,3,4,5];return SEQ_E.filter(function(id){return d.indexOf(SCDAY[id])>=0})}
+var ROLES=[{k:'ceo',n:'CEO',q:'Does this choice fit our big goal and our guests?'},{k:'fin',n:'Finance Chief',q:'What does each option cost, and can we afford it?'},{k:'ops',n:'Operations Chief',q:'Will the schedule, the oven, and the kitchen handle it?'},{k:'peo',n:'People Chief',q:'How will our crew feel about each option?'}];
+function holder(ri){return S.team.length?S.team[ri%S.team.length]:ROLES[ri].n}
+function leadName(){return S.team.length?S.team[S.step%S.team.length]:'The CEO'}
+var tmr=null;
+function startTimer(sec){clearInterval(tmr);var left=sec,o=$('#timerOut');if(!o)return;function tick(){o.textContent=Math.floor(left/60)+':'+('0'+left%60).slice(-2);if(left<=0){clearInterval(tmr);announce('Time is up.');speak('Time is up.')}left--}tick();tmr=setInterval(tick,1000)}
+function leadInfo(){var best=-1,ks=[];for(var k in S.votes){var v=S.votes[k];if(v>best){best=v;ks=[k]}else if(v===best)ks.push(k)}return {best:best,ks:ks}}
+function letterOf(k){var id=seq()[S.step];return 'ABCD'[S.order[id].indexOf(k)]}
+function updateLead(){var L=leadInfo(),m=$('#leadMsg');if(!m)return;
+  m.textContent=(L.best<=0)?'No votes yet.':(L.ks.length>1?'Tie between options '+L.ks.map(letterOf).join(' and ')+'. Discuss, then break the tie.':'Option '+letterOf(L.ks[0])+' leads with '+L.best+' vote'+(L.best===1?'':'s')+'.')}
 
 /* ---------- scenes ---------- */
 var SC={};
@@ -660,31 +683,54 @@ function vTitle(){
   announce('Welcome to Thanksgiving Dinner, Incorporated.');
 }
 function vSetup(){
+  var chk=function(d){return S.days.indexOf(d)>=0?' checked':''};
+  var cnt={1:3,2:3,3:3,4:3,5:2};
+  var days='';for(var d=1;d<=5;d++){days+='<label class="daychk"><input type="checkbox" name="day" value="'+d+'"'+chk(d)+'><span><strong>Day '+d+': '+DAYS[d].name+'</strong><br><small>'+esc(DAYS[d].focus)+' ('+cnt[d]+' decisions)</small></span></label>'}
+  var names='';for(var n=1;n<=5;n++){names+='<div class="tn" data-n="'+n+'"'+(n>2?' hidden':'')+'><label class="fld" for="tn'+n+'">Player '+n+' name (optional)</label><input type="text" id="tn'+n+'" maxlength="24" autocomplete="off"></div>'}
   V.innerHTML=
   '<div class="card"><h1 id="h1">Set Up Your Company</h1>'+
-  '<p>Play alone, in pairs, or in a team of four. Teams can split the jobs of CEO, Operations Chief, Finance Chief, and People Chief and talk each decision over before clicking.</p>'+
-  '<label class="fld" for="ceoName">CEO name (optional)</label><input type="text" id="ceoName" autocomplete="off" maxlength="30" value="'+esc(S.ceo)+'" placeholder="For example: Chief Gravy Officer Sam">'+
-  '<fieldset style="border:0;padding:0;margin:16px 0 0"><legend class="fld">Choose your run</legend><div class="grid2">'+
-  '<label class="modecard"><input type="radio" name="mode" value="express" checked><strong>Express: One Class Period (45 minutes)</strong><br><small>Eight key decisions in one sitting, then a quick debrief. Perfect for a single class.</small></label>'+
-  '<label class="modecard"><input type="radio" name="mode" value="extended"><strong>Extended: Five-Day Run</strong><br><small>Fourteen decisions across five days (Monday to Thursday dinner), with daily news, discussion prompts, and save and resume.</small></label>'+
+  '<label class="fld" for="ceoName">CEO or team name (optional)</label><input type="text" id="ceoName" autocomplete="off" maxlength="30" value="'+esc(S.ceo)+'" placeholder="For example: Gravy Train Management">'+
+  '<fieldset style="border:0;padding:0;margin:16px 0 0"><legend class="fld">How will you play?</legend><div class="grid3">'+
+  '<label class="modecard"><input type="radio" name="play" value="solo" checked><strong>Solo CEO</strong><br><small>One player makes every call.</small></label>'+
+  '<label class="modecard"><input type="radio" name="play" value="team"><strong>Small Team (2 to 5)</strong><br><small>Players share four roles and take turns as Decision Lead.</small></label>'+
+  '<label class="modecard"><input type="radio" name="play" value="teacher"><strong>Teacher-Led (whole class)</strong><br><small>The teacher projects it. The class discusses and votes, and the teacher locks in the answer.</small></label>'+
   '</div></fieldset>'+
+  '<div id="teamBox" class="card tealbox" hidden><h2 style="margin-top:0">Your Team</h2><label class="fld" for="teamN">Number of players</label><select id="teamN"><option>2</option><option>3</option><option>4</option><option>5</option></select>'+names+
+  '<p style="margin:.6em 0 0;font-size:.92rem">The four roles are CEO, Finance Chief, Operations Chief, and People Chief. With fewer than four players, some players hold two roles. The Decision Lead changes every decision.</p></div>'+
+  '<fieldset style="border:0;padding:0;margin:16px 0 0"><legend class="fld">Choose your run</legend><div class="grid2">'+
+  '<label class="modecard"><input type="radio" name="mode" value="express" checked><strong>Express: One Class Period (45 minutes)</strong><br><small>Eight key decisions that cover all five days in one sitting, then a quick debrief.</small></label>'+
+  '<label class="modecard"><input type="radio" name="mode" value="days"><strong>Choose My Days</strong><br><small>Play any days you like: one, two, three, four, or all five. Each day ends with news, a badge, and discussion prompts.</small></label>'+
+  '</div></fieldset>'+
+  '<div id="dayBox" class="card" hidden><h2 style="margin-top:0">Pick Your Days</h2>'+days+
+  '<div class="row"><button class="btn ghost" data-act="preset" data-v="1">Day 1 only</button><button class="btn ghost" data-act="preset" data-v="1,2">Days 1 to 2</button><button class="btn ghost" data-act="preset" data-v="1,2,3">Days 1 to 3</button><button class="btn ghost" data-act="preset" data-v="1,2,3,4">Days 1 to 4</button><button class="btn ghost" data-act="preset" data-v="1,2,3,4,5">All five</button></div>'+
+  '<p style="margin:.6em 0 0;font-size:.92rem">Skipping a day is fine. The story fills in sensible defaults, such as a 16-guest dinner with a $450 budget and a frozen turkey.</p></div>'+
   '<div class="setrow"><input type="checkbox" id="chkNar2"'+(CFG.nar?' checked':'')+'><label for="chkNar2">Read each scene aloud (narration)</label></div>'+
+  '<p id="setupMsg" role="status" style="color:#a1261b;font-weight:800;margin:.3em 0"></p>'+
   '<div class="row"><button class="btn big" data-act="start">Start the Simulation</button><button class="btn ghost" data-act="toTitle">Back</button></div></div>';
 }
 function vScene(){
   var id=seq()[S.step],sc=getScene(id);
   if(!S.order[id])S.order[id]=shuffle(sc.choices.map(function(c){return c.k}));
-  var ord=S.order[id],LET='ABCD';
+  S.votes={};
+  var ord=S.order[id],LET='ABCD',T=S.play==='teacher';
   var html=ord.map(function(k,i){
     var c=sc.choices.filter(function(x){return x.k===k})[0];
-    return '<button class="choice" data-act="pick" data-k="'+k+'"><span class="ltr" aria-hidden="true">'+LET[i]+'</span><span><strong><span class="sr-only">Option '+LET[i]+': </span>'+esc(val(c.t))+'</strong><br><small>'+esc(val(c.d)||'')+'</small></span></button>';
+    var b='<button class="choice" data-act="pick" data-k="'+k+'"><span class="ltr" aria-hidden="true">'+LET[i]+'</span><span><strong><span class="sr-only">Option '+LET[i]+': </span>'+esc(val(c.t))+'</strong><br><small>'+esc(val(c.d)||'')+'</small></span></button>';
+    if(T)b='<div class="choicewrap">'+b+'<div class="votes" role="group" aria-label="Class votes for option '+LET[i]+'"><span>Class votes</span><button class="vb" data-act="vote" data-k="'+k+'" data-d="-1" aria-label="Remove one vote for option '+LET[i]+'">−</button><output id="v_'+k+'" aria-live="off">0</output><button class="vb" data-act="vote" data-k="'+k+'" data-d="1" aria-label="Add one vote for option '+LET[i]+'">+</button></div></div>';
+    return b;
   }).join('');
-  var story=scText(sc);
+  var story=scText(sc),extra='';
+  if(T)extra='<section class="card tealbox" aria-label="Teacher-led round"><h2 style="margin-top:0">Teacher-Led Round</h2><p style="margin:.2em 0">Read the scene aloud or press Replay. Let the class discuss, collect votes by show of hands with the plus buttons, then lock in the winner.</p><div class="row"><button class="btn ghost" data-act="timer" data-s="60">Start 60-second discussion timer</button><span class="timer" id="timerOut" aria-hidden="true"></span></div></section>';
+  if(S.play==='team'){
+    extra='<section class="card huddle" aria-label="Team huddle"><h2 style="margin-top:0">Team Huddle</h2><p style="margin:.2em 0"><strong>Decision Lead this round: '+esc(leadName())+'.</strong> Hear each role first, then the Decision Lead makes the final click.</p><ul style="margin:.3em 0 .3em 1.1em;padding:0">'+
+      ROLES.map(function(r,ri){return '<li><strong>'+r.n+(S.team.length?' ('+esc(holder(ri))+')':'')+':</strong> '+esc(r.q)+'</li>'}).join('')+'</ul><div class="row"><button class="btn ghost" data-act="timer" data-s="60">Start 60-second huddle timer</button><span class="timer" id="timerOut" aria-hidden="true"></span></div></section>';
+  }
   V.innerHTML=pills(sc)+
    '<div class="stagewrap">'+stage(sc)+'</div><p class="sr-only">Scene picture: '+esc(sc.desc)+'</p>'+
    '<h1 id="h1" style="margin-top:14px">'+esc(sc.title)+'</h1>'+
-   '<section class="narr" aria-label="Narrator"><p>'+esc(story)+'</p><div class="row"><button class="btn ghost" data-act="replay">Replay narration</button><button class="btn ghost" data-act="stopnar">Stop narration</button></div></section>'+
-   '<h2>What will you do?</h2><div class="choices" role="group" aria-label="Your options">'+html+'</div>';
+   '<section class="narr" aria-label="Narrator"><p>'+esc(story)+'</p><div class="row"><button class="btn ghost" data-act="replay">Replay narration</button><button class="btn ghost" data-act="stopnar">Stop narration</button></div></section>'+extra+
+   '<h2>What will you do?</h2><div class="choices" role="group" aria-label="Your options">'+html+'</div>'+
+   (T?'<p id="leadMsg" role="status" style="color:#fff3dc;font-weight:800;margin:.8em 0 .2em">No votes yet.</p><div class="row"><button class="btn" data-act="lockLead">Lock in the leading option</button></div>':'');
   var spoken=story+' Here are your choices. '+ord.map(function(k,i){var c=sc.choices.filter(function(x){return x.k===k})[0];return 'Option '+LET[i]+'. '+val(c.t)+'.'}).join(' ');
   say(spoken);
 }
@@ -702,9 +748,14 @@ function pick(k){
 function vFeedback(){
   var id=S.last.id,sc=getScene(id),c=sc.choices.filter(function(x){return x.k===S.last.k})[0],d=S.last.d;
   var better='';
-  if(S.last.k!==sc.best){var b=sc.choices.filter(function(x){return x.k===sc.best})[0];better='<div class="hint"><strong>Another strong move:</strong> '+esc(val(b.t))+'. '+esc(b.concept[0])+' shows up in that choice.</div>'}
+  var b=sc.choices.filter(function(x){return x.k===sc.best})[0];
+  if(S.last.k!==sc.best&&S.play!=='teacher'){better='<div class="hint"><strong>Another strong move:</strong> '+esc(val(b.t))+'. '+esc(b.concept[0])+' shows up in that choice.</div>'}
+  var TN=S.play==='teacher'?'<details class="talk"><summary>Teacher Notes (close before projecting)</summary><p style="margin:.5em 0 0"><strong>Strongest choice:</strong> '+esc(val(b.t))+' ('+esc(b.concept[0])+').<br><strong>Ask the class:</strong> Which option would you change now that you see the result, and why?</p></details>':'';
+  var TEAM='';
+  if(S.play==='team'){var rm={cash:1,kit:2,mor:3,sat:0},seen={};var li=[];d.forEach(function(x){var ri=rm[x.k];if(ri===undefined||seen[ri])return;seen[ri]=1;var cur=x.k==='cash'?money(S.cash):Math.round(S[x.k])+' out of 100';li.push('<li><strong>'+ROLES[ri].n+(S.team.length?' ('+esc(holder(ri))+')':'')+' reports:</strong> '+LAB[x.k]+' is now '+cur+'. Is the team on track?</li>')});
+    TEAM='<section class="card huddle"><h2 style="margin-top:0">Team Debrief</h2><ul style="margin:.2em 0 0 1.1em;padding:0">'+(li.length?li.join(''):'<li>No numbers moved. Does the team agree with that outcome?</li>')+'</ul></section>'}
   var more=S.step<seq().length-1;
-  var nextDay=more&&S.mode==='extended'&&getScene(seq()[S.step+1]).day!==sc.day;
+  var nextDay=more&&S.mode!=='express'&&getScene(seq()[S.step+1]).day!==sc.day;
   var label=!more?'See the Results':(nextDay?'End of Day '+sc.day+': Read the News':'Next Decision');
   var out=val(c.out);
   V.innerHTML=pills(sc)+
@@ -712,8 +763,8 @@ function vFeedback(){
    '<h1 id="h1" style="margin-top:14px">Result: '+esc(sc.title)+'</h1>'+
    '<section class="card" aria-label="Outcome"><h2 style="margin-top:0">You chose: '+esc(val(c.t))+'</h2><p style="font-size:1.08rem">'+esc(out)+'</p>'+
    '<h3>What changed</h3><ul class="deltas">'+chips(d)+'</ul></section>'+
-   '<section class="concept"><h3>Business Concept: '+esc(c.concept[0])+'</h3><p style="margin:0">'+esc(c.concept[1])+'</p></section>'+better+
-   '<details class="talk"><summary>Table Talk (optional)</summary><p style="margin:.5em 0 0">'+esc(sc.talk)+'</p></details>'+
+   '<section class="concept"><h3>Business Concept: '+esc(c.concept[0])+'</h3><p style="margin:0">'+esc(c.concept[1])+'</p></section>'+better+TEAM+TN+
+   '<details class="talk"'+(S.play==='solo'?'':' open')+'><summary>Table Talk (optional)</summary><p style="margin:.5em 0 0">'+esc(sc.talk)+'</p></details>'+
    '<div class="row"><button class="btn big" data-act="next">'+label+'</button></div>';
   say(out+' '+deltaText(d)+' Business concept: '+c.concept[0]+'. '+c.concept[1]);
   announce('Result shown. '+deltaText(d));
@@ -723,7 +774,7 @@ function next(){
   var more=S.step<seq().length-1;
   if(!more){S.phase='results';S.step=seq().length;render();return}
   var nx=getScene(seq()[S.step+1]);
-  if(S.mode==='extended'&&nx.day!==sc.day){awardDay(sc.day);S.phase='day';S.dayDone=sc.day;render();return}
+  if(S.mode!=='express'&&nx.day!==sc.day){awardDay(sc.day);S.phase='day';S.dayDone=sc.day;render();return}
   S.step++;S.phase='scene';render();
 }
 function gazette(day){
@@ -740,7 +791,7 @@ var BRIEF={1:['What constraint will limit your plan the most?','How did your job
  3:['Which conflict style did you use, and what happened to morale?','What motivates your crew, and how can you tell?'],
  4:['What contingency plan would you write for next year?','How did you communicate during the crisis?']};
 function vDay(){
-  var d=S.dayDone,dn=DAYS[d],nd=DAYS[d+1];
+  var d=S.dayDone,dn=DAYS[d],nd=DAYS[getScene(seq()[S.step+1]).day];
   V.innerHTML='<div class="pills"><span class="pill">End of Day '+d+': '+dn.name+'</span></div>'+
   '<h1 id="h1">End of Day '+d+' Report</h1>'+gazette(d)+
   '<div class="card"><h2 style="margin-top:0">Badge Earned</h2><div class="badges" style="max-width:230px">'+badgeCard(d,S.badges[d],true)+'</div><p style="margin:.6em 0 0">Badges come in Bronze, Silver, and Gold. Gold means every choice that day matched the strongest business idea. Play again any time to upgrade a badge.</p></div>'+
@@ -790,7 +841,7 @@ function vResults(){
     return h+'</div>';
   }).join('');
   var revOpts=S.log.map(function(l,i){return '<option value="'+i+'"'+(String(S.revise)===String(i)?' selected':'')+'>'+esc(l.title)+': '+esc(l.choice)+'</option>'}).join('');
-  var name=S.ceo?S.ceo:'The CEO';
+  var name=S.ceo?S.ceo:(S.play==='team'&&S.team.length?S.team.join(', '):'The CEO');
   V.innerHTML=
   '<div class="stagewrap noprint">'+stage({props:['confetti'],cast:['ceo@170@happy','linda@300@happy','maya@500@happy','joe@630@happy'],say:[[400,52,'Best Thanksgiving ever!']]})+'</div>'+
   '<h1 id="h1" style="margin-top:14px">Dinner Is Served: Final Report</h1>'+
@@ -800,6 +851,8 @@ function vResults(){
   '<div class="card"><h2 style="margin-top:0">Badges From This Run</h2>'+shelf('run')+'<p style="margin:.6em 0 0">Locked badges belong to days not played in this run. Replay to earn them or to upgrade Bronze and Silver to Gold.</p></div>'+
   '<div class="card"><h2 style="margin-top:0">Your Leadership Style</h2>'+(st?'<p><strong>'+STYLES[st]+'</strong></p><p>'+STYLEDESC[st]+'</p>':'<p><strong>Balanced Manager</strong></p><p>You mixed approaches. Flexible leaders adapt their style to the situation.</p>')+
   '<p>Strong choices made: <strong>'+bestN+' of '+S.log.length+'</strong>. Strong does not mean perfect. Managers often choose among good options.</p></div>'+
+  (S.play==='team'?'<div class="card huddle"><h2 style="margin-top:0">Team Report</h2><ul style="margin:.2em 0 .4em 1.1em;padding:0">'+ROLES.map(function(r,ri){return '<li><strong>'+r.n+(S.team.length?': '+esc(holder(ri)):'')+'</strong></li>'}).join('')+'</ul><p style="margin:0">Table Talk: Each player names one decision they would defend and one they would change.</p></div>':'')+
+  (S.play==='teacher'?'<div class="card tealbox"><h2 style="margin-top:0">Class Discussion</h2><p style="margin:0">Ask: Which vote was closest? Which result surprised the class? Which badge would the class like to upgrade to Gold, and what would it change?</p></div>':'')+
   '<div class="card"><h2 style="margin-top:0">Business Concepts You Used</h2><ul style="columns:2;margin:0 0 0 1.1em;padding:0">'+clist.map(function(c){return '<li>'+esc(c)+'</li>'}).join('')+'</ul></div>'+
   '<div class="card noprint"><h2 style="margin-top:0">Your Decisions</h2><table class="t"><thead><tr><th scope="col">Decision</th><th scope="col">What you chose</th></tr></thead><tbody>'+S.log.map(function(l){return '<tr><td>'+esc(l.title)+'</td><td>'+esc(l.choice)+'</td></tr>'}).join('')+'</tbody></table></div>'+
   '<div class="noprint"><h2 class="ondark">Debrief Checks</h2>'+qh+'</div>'+
@@ -813,7 +866,7 @@ function vResults(){
 }
 function resultsText(){
   var sc=score(),r=rankFor(sc.total),st=myStyle();
-  var t='Thanksgiving Dinner, Inc. Results\nCEO: '+(S.ceo||'(not entered)')+'\nRun: '+(S.mode==='express'?'Express (one class period)':'Extended (five days)')+
+  var t='Thanksgiving Dinner, Inc. Results\nCEO: '+(S.ceo||'(not entered)')+'\nRun: '+(S.mode==='express'?'Express (one class period)':'Days played: '+S.days.join(', '))+' | Play style: '+S.play+(S.team.length?' ('+S.team.join(', ')+')':'')+
    '\nScore: '+sc.total+'/100 | Title: '+r[0]+'\nLeadership style: '+(st?STYLES[st]:'Balanced Manager')+
    '\nCash left: '+money(S.cash)+' of '+money(S.start)+' | Guest Happiness '+Math.round(S.sat)+' | Kitchen Readiness '+Math.round(S.kit)+' | Crew Morale '+Math.round(S.mor)+' | Guests '+S.guests+'\nDecisions:\n';
   S.log.forEach(function(l){t+='- '+l.title+': '+l.choice+'\n'});
@@ -831,6 +884,7 @@ setInterval(function(){if(!CFG.clock||!t0)return;var s=Math.floor((Date.now()-t0
 
 /* ---------- render ---------- */
 function render(){
+  clearInterval(tmr);
   ({title:vTitle,setup:vSetup,scene:vScene,fb:vFeedback,day:vDay,results:vResults})[S.phase]();
   hud();focusH();
 }
@@ -858,14 +912,14 @@ function teacherHtml(){
     });
   });
   return ''+
-  '<h3>Quick Start (two minutes)</h3><ol><li>Share this file or its link in D2L. Students open it on any device. It needs no login and collects no data.</li><li>Students choose <strong>Express</strong> (one 45-minute period) or <strong>Extended</strong> (five short sessions).</li><li>Sit back with your coffee. Each scene is narrated, each result explains the business idea, and the optional Table Talk prompts keep discussion going without you.</li></ol>'+
+  '<h3>Quick Start (two minutes)</h3><ol><li>Share this file or its link in D2L. Students open it on any device. It needs no login and collects no data.</li><li>Choose how to play (solo, small team, or teacher-led) and what to run: <strong>Express</strong> (one 45-minute period) or <strong>Choose My Days</strong> (any combination of the five days).</li><li>Sit back with your coffee. Each scene is narrated, each result explains the business idea, and the optional Table Talk prompts keep discussion going without you.</li></ol>'+
   '<h3>Learning Goals</h3><p><strong>By the end of this lesson, you will learn:</strong> how scope and budget shape choices, how lead times and bottlenecks affect a schedule, how leadership and conflict styles affect morale, and how to respond to a crisis with contingency plans and honest communication.</p>'+
   '<div class="eq"><strong>Essential Question:</strong> How do managers make good decisions when time, money, and people are all limited?</div>'+
   '<h3>Express Plan: One 45-Minute Period</h3><ul><li><strong>Warm Up and setup:</strong> the opening poem, learning goals, and mode selection.</li><li><strong>Eight decisions:</strong> scope, menu, turkey, oven, conflict, morning crisis, surprise guests, and service. Each takes a few minutes with narration and feedback.</li><li><strong>Debrief:</strong> final report, leadership style, four click-based checks, and an optional revise step. Turn on the pacing clock in Settings if you want a gentle guide.</li></ul>'+
-  '<h3>Extended Plan: Five Short Sessions</h3><table class="t"><thead><tr><th scope="col">Day</th><th scope="col">Focus</th><th scope="col">Scenes</th><th scope="col">Extension task</th><th scope="col">Discussion question</th></tr></thead><tbody>'+
+  '<h3>Choose-Your-Days Plan</h3><p>Run one day, two days, three, four, or all five, in any combination. A common pattern is Express in the first period, then one additional day per period. Skipped days get sensible defaults.</p><table class="t"><thead><tr><th scope="col">Day</th><th scope="col">Focus</th><th scope="col">Scenes</th><th scope="col">Extension task</th><th scope="col">Discussion question</th></tr></thead><tbody>'+
   rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td><td>'+esc(r[4])+'</td></tr>'}).join('')+'</tbody></table>'+
   '<p>Students can use <em>Save and Finish for Today</em> at the end of each day. Progress is saved in that browser on that device. If the browser blocks saving, the run simply continues without it.</p>'+
-  '<h3>Working Alone or in Teams</h3><p>The simulation works for one student. For teams, suggest four roles: CEO (final click), Operations Chief (kitchen and schedule), Finance Chief (cash and cost per plate), and People Chief (crew morale and conflicts). Rotate the CEO role each day in the Extended run.</p>'+
+  '<h3>Ways to Play</h3><ul><li><strong>Solo CEO:</strong> one student, every call.</li><li><strong>Small Team (2 to 5):</strong> players share four roles (CEO, Finance Chief, Operations Chief, People Chief). A Decision Lead rotates each decision and makes the final click after hearing each role. Each result includes a Team Debrief where roles report on their numbers.</li><li><strong>Teacher-Led (whole class):</strong> project the simulation. Narration reads the scene, the class discusses (with an optional 60-second timer), you collect votes by show of hands using the plus buttons, and you lock in the leading option. Teacher Notes after each result show the strongest choice and a follow-up question. Close them before projecting.</li></ul>'+
   '<h3>Strongest Choice in Each Scene</h3><p>There is no single path to a good score, but this cheat sheet shows the choice that best matches the business idea in each scene. Students receive a gentle hint when they pick another one.</p><table class="t"><thead><tr><th scope="col">Scene</th><th scope="col">Strongest choice</th><th scope="col">Concept</th></tr></thead><tbody>'+bestRows+'</tbody></table>'+
   '<h3>Vocabulary Students Meet</h3><p>Scope, constraint, cost per unit, lead time, critical path, bottleneck, capacity, delegation, span of control, conflict styles (competing, collaborating, compromising, avoiding), recognition and autonomy, contingency plan, crash cost, redundancy, transparency, continuous improvement.</p>'+
   '<h3>Accessibility Features</h3><ul><li>Everything is keyboard accessible, with visible focus and a skip link.</li><li>Every animated scene has a text description for screen readers, and every important number is also shown as text, never by color alone.</li><li>Narration reads the full scene, the option titles, the results, and the meter changes aloud. Narration can be turned off or slowed down in Settings.</li><li>Calm mode turns off all animation, and the file also respects the device\'s reduced-motion setting. Larger text is one click away.</li><li>Food safety content follows standard guidance: thaw in the refrigerator, in cold water, or cook from frozen, and never on the counter.</li></ul>'+
@@ -882,9 +936,19 @@ document.addEventListener('click',function(e){
    case 'toTitle':S.phase='title';render();break;
    case 'poem':say('Twas the week before Thanksgiving, and all through the class, both teachers and students were running out of gas. The coffee was cold, motivation was low, and nobody wanted another PowerPoint show. So put down your textbooks, let us have a little fun. We have got a Thanksgiving business to run! A turkey to manage, a budget to keep, and relatives arriving while you dream of sleep. Who is the CEO? Who is managing the crew? And what if the turkey is still frozen? That is on you!');break;
    case 'start':
-     var m=$('input[name=mode]:checked').value;S=newState(m);S.ceo=$('#ceoName').value.trim();
-     CFG.nar=$('#chkNar2').checked;saveCfg();applyCfg();
+     var m=$('input[name=mode]:checked').value,pl=$('input[name=play]:checked').value;
+     var dsel=$$('input[name=day]:checked').map(function(x){return +x.value});
+     if(m==='days'&&!dsel.length){$('#setupMsg').textContent='Choose at least one day to play.';break}
+     var ceo=$('#ceoName').value.trim();
+     S=newState(m);S.ceo=ceo;S.play=pl;S.days=(m==='days')?dsel:[1,2,3,4,5];
+     if(pl==='team'){var tn=+$('#teamN').value;for(var q=1;q<=tn;q++){S.team.push($('#tn'+q).value.trim()||('Player '+q))}}
+     if(m==='days'){if(S.days.indexOf(1)<0){S.cash=450;S.start=450;S.guests=16}if(S.days.indexOf(2)<0)S.flags.turkey='frozen'}
+     CFG.nar=$('#chkNar2').checked;if(pl==='teacher'){CFG.nar=true;CFG.big=true}saveCfg();applyCfg();
      t0=Date.now();S.phase='scene';render();break;
+   case 'preset':var pv=el.getAttribute('data-v').split(',');$$('input[name=day]').forEach(function(x){x.checked=pv.indexOf(x.value)>=0});break;
+   case 'timer':startTimer(+el.getAttribute('data-s')||60);break;
+   case 'vote':var vk=el.getAttribute('data-k'),dv=+el.getAttribute('data-d');S.votes[vk]=Math.max(0,(S.votes[vk]||0)+dv);$('#v_'+vk).textContent=S.votes[vk];updateLead();break;
+   case 'lockLead':var LI=leadInfo();if(LI.best<=0||LI.ks.length!==1){updateLead();announce($('#leadMsg').textContent);break}pick(LI.ks[0]);break;
    case 'resume':resume();break;
    case 'pick':pick(el.getAttribute('data-k'));break;
    case 'next':next();break;
@@ -910,6 +974,9 @@ document.addEventListener('click',function(e){
   }
 });
 document.addEventListener('change',function(e){
+  if(e.target.name==='play'){var tb=$('#teamBox');if(tb)tb.hidden=(e.target.value!=='team')}
+  if(e.target.name==='mode'){var db=$('#dayBox');if(db)db.hidden=(e.target.value!=='days')}
+  if(e.target.id==='teamN'){var nn=+e.target.value;$$('.tn').forEach(function(x){x.hidden=(+x.getAttribute('data-n')>nn)})}
   if(e.target.id==='selRev'){S.revise=e.target.value}
   if(e.target.id==='selVoice'){CFG.voice=e.target.value;TTS.pick=TTS.voices.filter(function(v){return v.name===e.target.value})[0]||TTS.pick;saveCfg();speak('Hello, I am your narrator for Thanksgiving Dinner, Incorporated.')}
   if(e.target.id==='selRate'){CFG.rate=parseFloat(e.target.value);saveCfg()}
